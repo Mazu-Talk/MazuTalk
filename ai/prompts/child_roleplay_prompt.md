@@ -1,3 +1,0 @@
-# Child Roleplay Prompt
-
-Placeholder.

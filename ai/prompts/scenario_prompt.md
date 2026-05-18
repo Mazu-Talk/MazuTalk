@@ -1,3 +1,0 @@
-# Scenario Prompt
-
-Placeholder.
