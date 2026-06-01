@@ -1,0 +1,9 @@
+torch
+torchaudio
+openai-whisper
+faster-whisper
+jiwer
+pandas
+tqdm
+soundfile
+librosa
