@@ -3,7 +3,8 @@
 # React(프론트)에서 텍스트를 보내면 audio_url을 반환해줌
 # 실제 변환 로직은 tts_service.py의 generate_tts()가 처리
 
-from fastapi import APIRouter
+import os
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -43,7 +44,12 @@ def tts(request: TTSRequest):
 # ─────────────────────────────────────────────
 @router.get("/audio/{filename}")
 def get_audio(filename: str):
-    return FileResponse(
-        path=f"output_audio/{filename}",
-        media_type="audio/wav"
-    )
+    # 경로 이탈(Directory Traversal) 공격 방지
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join("output_audio", safe_filename)
+
+    # 파일이 없을 경우 404 반환
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Audio file not found")
+
+    return FileResponse(path=file_path, media_type="audio/wav")
