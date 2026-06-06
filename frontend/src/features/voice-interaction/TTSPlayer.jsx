@@ -16,7 +16,7 @@ function TTSPlayer() {
 
     try {
       // FastAPI POST /tts 로 텍스트 전송
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/tts`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: text, speed: 0.8 }),
