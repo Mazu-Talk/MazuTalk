@@ -1,0 +1,618 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mazutalk.local/schemas/scenario_schema.json",
+  "title": "MazuTalk Scenario Schema",
+  "description": "5~8세 아동이 또래 친구와 사회적 상호작용을 연습하기 위한 MazuTalk 역할극 시나리오 스키마",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenarioId",
+    "title",
+    "description",
+    "category",
+    "difficulty",
+    "targetAge",
+    "learningGoal",
+    "characters",
+    "context",
+    "dialogueFlow",
+    "emotionRules",
+    "evaluationCriteria",
+    "metadata"
+  ],
+  "properties": {
+    "scenarioId": {
+      "type": "string",
+      "description": "시나리오 고유 ID",
+      "pattern": "^[a-z][a-z0-9_]*_[0-9]{3}$",
+      "examples": ["classroom_greeting_001", "playground_conflict_001"]
+    },
+    "title": {
+      "type": "string",
+      "description": "사용자에게 보여줄 시나리오 제목",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "description": "시나리오의 상황과 연습 목표를 설명하는 문장",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "category": {
+      "type": "string",
+      "description": "MVP의 사회성 훈련 주제",
+      "oneOf": [
+        {
+          "const": "social_greeting",
+          "description": "인사하기: 친구에게 먼저 인사하거나 친구의 인사에 자연스럽게 대답하는 연습"
+        },
+        {
+          "const": "emotion_expression",
+          "description": "감정 표현하기: 기쁨, 속상함, 긴장, 서운함, 고마움 등을 짧은 말로 표현하는 연습"
+        },
+        {
+          "const": "help_request_refusal",
+          "description": "도움 요청/거절하기: 도움이 필요할 때 친구에게 부탁하거나 원하지 않는 제안을 부드럽게 거절하는 연습"
+        },
+        {
+          "const": "conflict_resolution",
+          "description": "갈등 상황 해결하기: 차례, 공유, 놀이 방식 차이 같은 또래 갈등을 말로 조율하는 연습"
+        }
+      ]
+    },
+    "difficulty": {
+      "type": "string",
+      "description": "시나리오 기본 난이도. MVP 데이터셋은 easy를 기본값으로 사용한다.",
+      "enum": ["easy", "medium", "hard"],
+      "default": "easy"
+    },
+    "targetAge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 8
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 8
+        }
+      }
+    },
+    "learningGoal": {
+      "type": "array",
+      "description": "시나리오에서 연습할 학습 목표",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "uniqueItems": true
+    },
+    "targetSkills": {
+      "type": "array",
+      "description": "리포트와 평가에 사용할 사회성 기술 태그",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/socialSkill"
+      },
+      "uniqueItems": true
+    },
+    "characters": {
+      "type": "array",
+      "description": "역할극 참여자. MVP에서는 사용자 아동과 또래 AI 친구만 사용한다.",
+      "minItems": 2,
+      "maxItems": 2,
+      "contains": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": {
+            "const": "ai_partner"
+          }
+        }
+      },
+      "items": {
+        "$ref": "#/$defs/character"
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "시나리오 배경 정보",
+      "additionalProperties": false,
+      "required": ["place", "situation", "background"],
+      "properties": {
+        "place": {
+          "type": "string",
+          "description": "시나리오 장소",
+          "oneOf": [
+            {
+              "const": "playground",
+              "description": "놀이터: 그네, 미끄럼틀, 모래놀이 등 바깥 놀이 상황"
+            },
+            {
+              "const": "kindergarten_classroom",
+              "description": "유치원 교실: 등원, 책상 활동, 친구와의 짧은 대화 상황"
+            },
+            {
+              "const": "kindergarten_playroom",
+              "description": "유치원 놀이 공간: 블록, 장난감, 역할놀이처럼 친구와 함께 노는 상황"
+            },
+            {
+              "const": "kindergarten_art_room",
+              "description": "유치원 만들기/미술 활동 공간: 색연필, 풀, 종이 등을 빌리거나 함께 사용하는 상황"
+            }
+          ]
+        },
+        "situation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "background": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "objects": {
+          "type": "array",
+          "description": "상황에 등장하는 사물",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "dialogueFlow": {
+      "type": "array",
+      "description": "AI가 이끄는 단계별 대화 흐름",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/dialogueStep"
+      }
+    },
+    "emotionRules": {
+      "type": "array",
+      "description": "아동 발화에서 감정 표현을 추정하고 피드백하기 위한 간단한 규칙",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/emotionRule"
+      }
+    },
+    "safetyGuidance": {
+      "type": "object",
+      "description": "시나리오별 안전 운영 가이드",
+      "additionalProperties": false,
+      "properties": {
+        "avoid": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "uniqueItems": true
+        },
+        "fallbackUtterance": {
+          "type": "string",
+          "description": "아동이 어려워하거나 응답하지 않을 때 사용할 쉬운 대체 문장",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "evaluationCriteria": {
+      "type": "object",
+      "description": "시나리오 수행 결과를 리포트로 요약하기 위한 기준",
+      "additionalProperties": false,
+      "required": [
+        "intentMatched",
+        "minUtteranceLength",
+        "requiredSkill",
+        "scoringRule"
+      ],
+      "properties": {
+        "intentMatched": {
+          "type": "boolean"
+        },
+        "minUtteranceLength": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "requiredSkill": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/socialSkill"
+          },
+          "uniqueItems": true
+        },
+        "scoringRule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intentMatch",
+            "contextAppropriate",
+            "emotionExpression",
+            "conversationContinuity"
+          ],
+          "properties": {
+            "intentMatch": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "contextAppropriate": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "emotionExpression": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "conversationContinuity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "createdBy", "lastUpdated"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "examples": ["0.1.0"]
+        },
+        "createdBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date",
+          "examples": ["2026-06-07"]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "character": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["characterId", "role", "name"],
+      "properties": {
+        "characterId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "role": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "learner",
+              "description": "학습자 역할: 실제 사용자 아동"
+            },
+            {
+              "const": "ai_partner",
+              "description": "AI 또래 친구 역할: 역할극에서 아동과 상호작용하는 친구"
+            }
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "personality": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "friendly",
+              "description": "친근한 친구: 먼저 다가가고 부드럽게 말을 건다"
+            },
+            {
+              "const": "calm",
+              "description": "차분한 친구: 느리고 안정적인 말투로 부담을 낮춘다"
+            },
+            {
+              "const": "playful",
+              "description": "놀이를 좋아하는 친구: 밝고 장난기 있는 방식으로 놀이를 제안한다"
+            },
+            {
+              "const": "shy",
+              "description": "수줍은 친구: 조심스럽게 말하며 아동이 먼저 말할 기회를 준다"
+            },
+            {
+              "const": "curious",
+              "description": "궁금한 것이 많은 친구: 간단한 질문으로 대화를 이어간다"
+            },
+            {
+              "const": "encouraging",
+              "description": "격려하는 친구: 아동의 시도를 인정하고 쉬운 표현을 제안한다"
+            }
+          ]
+        }
+      }
+    },
+    "dialogueStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stepId",
+        "speaker",
+        "utterance",
+        "expectedUserIntent",
+        "acceptableResponses",
+        "hint",
+        "emotionTarget",
+        "nextStep"
+      ],
+      "properties": {
+        "stepId": {
+          "type": "string",
+          "pattern": "^step_[0-9]{3}$"
+        },
+        "speaker": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "ai_partner",
+              "description": "대화 단계에서 먼저 발화하는 AI 또래 친구"
+            }
+          ]
+        },
+        "utterance": {
+          "type": "string",
+          "description": "AI 친구가 아동에게 말하는 짧은 문장",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "expectedUserIntent": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/intent"
+          },
+          "uniqueItems": true
+        },
+        "acceptableResponses": {
+          "type": "array",
+          "description": "정답 목록이 아니라 의도 매칭에 참고할 수 있는 예시 발화",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "uniqueItems": true
+        },
+        "hint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "emotionTarget": {
+          "$ref": "#/$defs/emotionTarget"
+        },
+        "nextStep": {
+          "type": "string",
+          "pattern": "^(step_[0-9]{3}|end)$"
+        }
+      }
+    },
+    "emotionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["emotion", "keywords", "feedback"],
+      "properties": {
+        "emotion": {
+          "$ref": "#/$defs/emotionTarget"
+        },
+        "keywords": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "uniqueItems": true
+        },
+        "feedback": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    },
+    "emotionTarget": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "positive",
+          "description": "긍정 감정: 좋아함, 기쁨, 재미, 고마움 같은 밝은 감정"
+        },
+        {
+          "const": "neutral",
+          "description": "중립 상태: 특별히 강한 감정 표현이 없는 일반적인 반응"
+        },
+        {
+          "const": "negative",
+          "description": "부정 감정: 싫음, 속상함, 화남, 서운함 같은 불편한 감정"
+        },
+        {
+          "const": "anxious",
+          "description": "긴장 상태: 무섭거나 떨리거나 새로운 상황을 어려워하는 반응"
+        },
+        {
+          "const": "confused",
+          "description": "혼란 상태: 무엇을 해야 할지 모르거나 질문을 이해하기 어려워하는 반응"
+        },
+        {
+          "const": "passive",
+          "description": "소극적 상태: 짧게 대답하거나 기다리거나 먼저 말하기 어려워하는 반응"
+        }
+      ]
+    },
+    "intent": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "greeting",
+          "description": "인사 의도: 안녕, 반가워 같은 대화 시작 표현"
+        },
+        {
+          "const": "goodbye",
+          "description": "작별 인사 의도: 잘 가, 다음에 또 놀자 같은 대화 마무리 표현"
+        },
+        {
+          "const": "emotion_response",
+          "description": "감정 응답 의도: 지금 기분이나 마음 상태를 말하는 표현"
+        },
+        {
+          "const": "positive_emotion",
+          "description": "긍정 감정 표현 의도: 좋아, 재밌어, 기뻐 같은 밝은 감정 표현"
+        },
+        {
+          "const": "negative_emotion",
+          "description": "부정 감정 표현 의도: 싫어, 속상해, 무서워 같은 불편한 감정 표현"
+        },
+        {
+          "const": "request_help",
+          "description": "도움 요청 의도: 도와줘, 같이 해줄래 같은 도움 요청 표현"
+        },
+        {
+          "const": "request_object",
+          "description": "물건 요청 의도: 빌려줄래, 같이 써도 돼 같은 물건 사용 요청 표현"
+        },
+        {
+          "const": "accept_help",
+          "description": "도움 수락 의도: 응, 도와줘, 같이 하자 같은 수락 표현"
+        },
+        {
+          "const": "refuse_help",
+          "description": "도움 또는 제안 거절 의도: 괜찮아, 지금은 안 할래 같은 부드러운 거절 표현"
+        },
+        {
+          "const": "accept_invitation",
+          "description": "놀이 제안 수락 의도: 좋아, 같이 놀자 같은 수락 표현"
+        },
+        {
+          "const": "reject_invitation",
+          "description": "놀이 제안 거절 의도: 지금은 쉬고 싶어, 안 하고 싶어 같은 거절 표현"
+        },
+        {
+          "const": "join_play",
+          "description": "놀이 참여 의도: 나도 같이 해도 돼, 같이 놀래 같은 참여 요청 표현"
+        },
+        {
+          "const": "turn_taking",
+          "description": "차례 조율 의도: 내 차례야, 다음에 내가 해도 돼 같은 순서 표현"
+        },
+        {
+          "const": "sharing",
+          "description": "공유 의도: 같이 쓰자, 나눠 쓰자 같은 물건이나 놀이 공유 표현"
+        },
+        {
+          "const": "ask_permission",
+          "description": "허락 구하기 의도: 써도 돼, 해도 돼 같은 허락 요청 표현"
+        },
+        {
+          "const": "state_preference",
+          "description": "선호 표현 의도: 나는 이게 좋아, 이걸 하고 싶어 같은 선택 표현"
+        },
+        {
+          "const": "conflict_repair",
+          "description": "갈등 회복 의도: 그만해줘, 다시 만들자, 같이 정하자 같은 갈등 조율 표현"
+        },
+        {
+          "const": "apology",
+          "description": "사과 의도: 미안해, 괜찮아 같은 사과 또는 회복 표현"
+        },
+        {
+          "const": "conversation_continuation",
+          "description": "대화 이어가기 의도: 질문에 답하거나 다음 말을 이어가는 표현"
+        }
+      ]
+    },
+    "socialSkill": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "greeting",
+          "description": "인사하기 기술: 친구에게 먼저 인사하거나 인사에 답하기"
+        },
+        {
+          "const": "goodbye",
+          "description": "작별 인사 기술: 놀이를 마치며 헤어짐을 표현하기"
+        },
+        {
+          "const": "turn_taking",
+          "description": "차례 지키기 기술: 순서를 기다리거나 자신의 차례를 말로 표현하기"
+        },
+        {
+          "const": "emotion_expression",
+          "description": "감정 표현 기술: 자신의 기분을 감정 단어로 말하기"
+        },
+        {
+          "const": "requesting_help",
+          "description": "도움 요청 기술: 어려운 상황에서 친구에게 도움을 부탁하기"
+        },
+        {
+          "const": "refusal",
+          "description": "거절하기 기술: 원하지 않는 놀이 또는 제안을 부드럽게 거절하기"
+        },
+        {
+          "const": "joining_play",
+          "description": "놀이 참여 기술: 친구의 놀이에 끼고 싶다고 말하기"
+        },
+        {
+          "const": "sharing",
+          "description": "나누기 기술: 장난감이나 놀이 도구를 함께 쓰자고 말하기"
+        },
+        {
+          "const": "ask_permission",
+          "description": "허락 구하기 기술: 친구의 물건이나 놀이에 대해 먼저 물어보기"
+        },
+        {
+          "const": "conflict_resolution",
+          "description": "갈등 해결 기술: 빼앗기, 새치기, 놀이 의견 차이를 말로 해결하기"
+        },
+        {
+          "const": "conversation_continuation",
+          "description": "대화 이어가기 기술: 친구의 말에 답하고 짧은 대화를 유지하기"
+        }
+      ]
+    }
+  }
+}
