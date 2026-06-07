@@ -40,6 +40,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default="small")
     parser.add_argument("--language", default="ko")
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--task", default="transcribe")
+    parser.add_argument("--beam-size", type=int, default=5)
+    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--condition-on-previous-text", action="store_true")
     parser.add_argument("--limit", type=int)
     return parser.parse_args()
 
@@ -92,6 +96,10 @@ def main() -> None:
             result = model.transcribe(
                 str(audio_path),
                 language=args.language,
+                task=args.task,
+                beam_size=args.beam_size,
+                temperature=args.temperature,
+                condition_on_previous_text=args.condition_on_previous_text,
                 fp16=args.device != "cpu",
             )
             elapsed = time.perf_counter() - started

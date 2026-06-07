@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 import pandas as pd
+import soundfile as sf
 from tqdm import tqdm
 
 from common import audio_duration_sec, display_path, ensure_parent, read_metadata, resolve_path
@@ -16,9 +17,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-metadata", default="ai/stt/data/processed/metadata_preprocessed.csv")
     parser.add_argument("--output-wav-dir", default="ai/stt/data/processed/wav")
     parser.add_argument("--sample-rate", type=int, default=16000)
+    parser.add_argument(
+        "--reuse-compatible",
+        action="store_true",
+        help="Keep the original wav path when it is already mono and at the target sample rate.",
+    )
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--absolute-paths", action="store_true")
     return parser.parse_args()
+
+
+def is_compatible_wav(input_path: Path, sample_rate: int) -> bool:
+    audio_info = sf.info(str(input_path))
+    return audio_info.samplerate == sample_rate and audio_info.channels == 1
 
 
 def convert_wav(input_path: Path, output_path: Path, sample_rate: int, force: bool) -> None:
@@ -51,7 +62,9 @@ def main() -> None:
         source = resolve_path(row["audio_path"])
         target = output_wav_dir / f"{source.stem}.wav"
 
-        if target.exists() and not args.force:
+        if args.reuse_compatible and is_compatible_wav(source, args.sample_rate):
+            target = source
+        elif target.exists() and not args.force:
             pass
         else:
             convert_wav(source, target, args.sample_rate, args.force)
@@ -68,4 +81,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -29,7 +29,19 @@ FIELDNAMES = [
     "faster_whisper_time_sec",
 ]
 
-PUNCTUATION_RE = re.compile(r"""[\s,\.?!'"`"“”‘’\(\)\[\]\{\}]""")
+PUNCTUATION_RE = re.compile(r"""[\s,\.?!'"`"“”‘’\(\)\[\]\{\}:;~\-_/\\|@#$%^&*+=<>]""")
+NUMBER_MAP = {
+    "0": "영",
+    "1": "일",
+    "2": "이",
+    "3": "삼",
+    "4": "사",
+    "5": "오",
+    "6": "육",
+    "7": "칠",
+    "8": "팔",
+    "9": "구",
+}
 
 
 def resolve_path(path: str | Path) -> Path:
@@ -46,7 +58,14 @@ def csv_path(path: str | Path) -> str:
 
 
 def normalize_text(text: str | None) -> str:
-    return PUNCTUATION_RE.sub("", (text or "").strip())
+    text = (text or "").strip().lower()
+    text = "".join(NUMBER_MAP.get(char, char) for char in text)
+    text = text.replace("것이라고", "거라고")
+    text = text.replace("것 이라고", "거라고")
+    text = text.replace("것이라서", "거라서")
+    text = text.replace("것 이라서", "거라서")
+    text = text.replace("한번", "한 번")
+    return PUNCTUATION_RE.sub("", text)
 
 
 def levenshtein_distance(source: str, target: str) -> int:

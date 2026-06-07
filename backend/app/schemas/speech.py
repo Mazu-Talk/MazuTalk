@@ -1,0 +1,85 @@
+from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+
+class SpeechSegment(BaseModel):
+    text: str = Field(..., min_length=1)
+    start_seconds: float | None = Field(default=None, ge=0)
+    end_seconds: float | None = Field(default=None, ge=0)
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class SpeechAnalysisRequest(BaseModel):
+    transcript: str = Field(..., min_length=1)
+    duration_seconds: float | None = Field(default=None, gt=0)
+    utterance_started_at: datetime | None = None
+    utterance_ended_at: datetime | None = None
+    response_requested_at: datetime | None = None
+    response_started_at: datetime | None = None
+    segments: list[SpeechSegment] = Field(default_factory=list)
+
+
+class RepeatedExpression(BaseModel):
+    expression: str
+    count: int
+    type: str
+
+
+class SpeechPace(BaseModel):
+    words_per_minute: float
+    syllables_per_second: float
+    label: str
+
+
+class ResponseLatency(BaseModel):
+    seconds: float | None
+    label: str
+
+
+class SpeechAnalysisResponse(BaseModel):
+    transcript: str
+    duration_seconds: float
+    word_count: int
+    syllable_count: int
+    pace: SpeechPace
+    repeated_expressions: list[RepeatedExpression]
+    repetition_score: float
+    response_latency: ResponseLatency
+    flags: list[str]
+    coaching_tips: list[str]
+
+
+class ConversationMessage(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant|system)$")
+    content: str = Field(..., min_length=1)
+
+
+class SttToLlmRequest(BaseModel):
+    session_id: str = Field(default="local-session")
+    stt_result: SpeechAnalysisRequest
+    conversation_history: list[ConversationMessage] = Field(default_factory=list)
+    child_profile: dict[str, Any] = Field(default_factory=dict)
+
+
+class LlmModuleResponse(BaseModel):
+    therapist_reply: str
+    next_prompt: str
+    coaching_cues: list[str] = Field(default_factory=list)
+    model_name: str = "local-rule-model"
+
+
+class SttToLlmResponse(BaseModel):
+    session_id: str
+    analysis: SpeechAnalysisResponse
+    llm: LlmModuleResponse
+
+
+class SttPipelineResponse(BaseModel):
+    session_id: str
+    transcript: str
+    stt_model: str
+    stt_time_seconds: float
+    analysis: SpeechAnalysisResponse
+    llm: LlmModuleResponse

@@ -1,0 +1,432 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f6f7f9;
+  color: #17202a;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: #176f8f;
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0 18px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.appShell {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.heroBand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 1180px;
+  margin: 0 auto 20px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 22px 24px;
+}
+
+.heroBand span,
+.referenceBox span {
+  color: #66727f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.heroStats {
+  display: grid;
+  min-width: 150px;
+  justify-items: end;
+  gap: 2px;
+}
+
+.heroStats strong {
+  color: #176f8f;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.inputPane,
+.resultPane {
+  background: white;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.resultPane {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.sectionHeader span,
+small,
+.emptyText {
+  color: #66727f;
+}
+
+.sampleList {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sampleButton {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  min-height: 52px;
+  border: 1px solid #c9d3df;
+  background: #fbfcfd;
+  color: #17202a;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.sampleButton.active {
+  border-color: #176f8f;
+  background: #eaf6f8;
+}
+
+.sampleButton span {
+  color: #176f8f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sampleButton strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referenceBox {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 16px;
+  border-left: 4px solid #176f8f;
+  background: #f3f8fa;
+  padding: 12px 14px;
+}
+
+.referenceBox p {
+  color: #26313d;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.livePanel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  border: 1px solid #c9d3df;
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 14px;
+}
+
+.livePanel > div:first-child,
+.liveSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.livePanel strong {
+  font-size: 15px;
+}
+
+.livePanel span,
+.liveSummary span {
+  color: #66727f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.recordActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.recordActions button {
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.recordActions button:last-child {
+  background: #b42318;
+}
+
+.liveSummary {
+  border-top: 1px solid #dfe5ec;
+  padding-top: 10px;
+}
+
+.liveSummary strong {
+  color: #176f8f;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  color: #3a4652;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+textarea,
+input {
+  width: 100%;
+  border: 1px solid #c9d3df;
+  border-radius: 6px;
+  color: #17202a;
+  background: #fbfcfd;
+}
+
+textarea {
+  min-height: 190px;
+  resize: vertical;
+  padding: 14px;
+  line-height: 1.55;
+}
+
+input {
+  height: 44px;
+  padding: 0 12px;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.comparisonTable {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+}
+
+.comparisonHeader,
+.comparisonRow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.4fr) minmax(80px, 0.7fr) minmax(80px, 0.7fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+}
+
+.comparisonHeader {
+  background: #f1f4f7;
+  color: #66727f;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.comparisonRow {
+  border-top: 1px solid #dfe5ec;
+}
+
+.comparisonRow div {
+  display: grid;
+  gap: 3px;
+}
+
+.comparisonRow strong {
+  font-size: 15px;
+}
+
+.comparisonRow b {
+  color: #176f8f;
+  font-size: 17px;
+}
+
+.pipelineBox {
+  display: grid;
+  gap: 12px;
+}
+
+.pipelineBox h2 {
+  margin-bottom: 2px;
+}
+
+.pipelineBox p {
+  color: #26313d;
+  line-height: 1.6;
+}
+
+.pipelineSteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pipelineSteps span {
+  display: grid;
+  align-items: center;
+  min-height: 38px;
+  border: 1px solid #dfe5ec;
+  border-radius: 6px;
+  background: #fbfcfd;
+  color: #66727f;
+  font-size: 12px;
+  font-weight: 900;
+  justify-items: center;
+}
+
+.pipelineSteps.complete span {
+  border-color: #176f8f;
+  background: #eaf6f8;
+  color: #176f8f;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcfd;
+}
+
+.metric span {
+  color: #66727f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.metric strong {
+  font-size: 23px;
+  line-height: 1;
+}
+
+ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.dialogueBox {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #dfe5ec;
+  padding-top: 22px;
+}
+
+.dialogueBox strong {
+  color: #176f8f;
+}
+
+.errorText {
+  margin-top: 14px;
+  color: #b42318;
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .appShell {
+    padding: 16px;
+  }
+
+  .heroBand {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .heroStats {
+    justify-items: start;
+  }
+
+  .workspace,
+  .metricGrid,
+  .fieldGrid,
+  .pipelineSteps,
+  .recordActions {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeader,
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
