@@ -1,0 +1,130 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하은",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "playroom_conflict_003",
+  "title": "친구가 내 의견을 듣지 않고 놀이를 바꿀 때 이야기하기",
+  "category": "conflict_resolution",
+  "description": "놀이 방식이 바뀌었을 때 아동이 자신의 의견을 친구에게 말하는 시나리오",
+  "learningGoal": [
+    "내 의견 말하기",
+    "놀이 방식 조율하기",
+    "친구의 의견 듣기"
+  ],
+  "targetSkills": [
+    "conflict_resolution",
+    "conversation_continuation"
+  ],
+  "context": {
+    "place": "kindergarten_playroom",
+    "situation": "친구가 상의 없이 블록 놀이를 자동차 놀이로 바꾼 상황",
+    "background": "아동은 아직 블록 집을 완성하고 싶어 한다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "이제 자동차 놀이 하자.",
+      "expectedUserIntent": [
+        "state_preference",
+        "conflict_repair"
+      ],
+      "acceptableResponses": [
+        "나는 블록 더 하고 싶어",
+        "잠깐만",
+        "이거 끝내고 하자"
+      ],
+      "hint": "내가 하고 싶은 놀이를 말해보세요.",
+      "emotionTarget": "negative",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "그럼 블록 집 끝나고 자동차 놀이할까?",
+      "expectedUserIntent": [
+        "accept_invitation",
+        "conversation_continuation"
+      ],
+      "acceptableResponses": [
+        "응",
+        "좋아",
+        "그렇게 하자"
+      ],
+      "hint": "친구의 제안에 대답해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "conflict_resolution",
+      "conversation_continuation"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 10,
+      "conversationContinuity": 20
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "conflict_resolution",
+      "kindergarten_playroom"
+    ]
+  }
+}

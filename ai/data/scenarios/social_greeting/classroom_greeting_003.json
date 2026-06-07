@@ -1,0 +1,130 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하은",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "classroom_greeting_003",
+  "title": "친구가 먼저 인사했을 때 대답하기",
+  "category": "social_greeting",
+  "description": "친구가 먼저 인사했을 때 아동이 인사에 답하고 간단히 반응하는 시나리오",
+  "learningGoal": [
+    "친구의 인사에 대답하기",
+    "상대방의 말 듣기",
+    "간단한 질문에 답하기"
+  ],
+  "targetSkills": [
+    "greeting",
+    "conversation_continuation"
+  ],
+  "context": {
+    "place": "kindergarten_classroom",
+    "situation": "친구가 먼저 다가와 인사한 상황",
+    "background": "아동이 가방을 내려놓고 자리에 앉으려 한다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "안녕! 너 왔네.",
+      "expectedUserIntent": [
+        "greeting"
+      ],
+      "acceptableResponses": [
+        "안녕",
+        "응 안녕",
+        "반가워"
+      ],
+      "hint": "친구의 인사에 대답해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "내 옆에 앉을래?",
+      "expectedUserIntent": [
+        "accept_invitation",
+        "reject_invitation"
+      ],
+      "acceptableResponses": [
+        "응",
+        "좋아",
+        "아니",
+        "다른 데 앉을래"
+      ],
+      "hint": "옆에 앉고 싶은지 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "greeting",
+      "conversation_continuation"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 10,
+      "conversationContinuity": 20
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "social_greeting",
+      "kindergarten_classroom"
+    ]
+  }
+}

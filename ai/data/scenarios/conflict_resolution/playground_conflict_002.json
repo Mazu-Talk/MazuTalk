@@ -1,0 +1,130 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하준",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "playground_conflict_002",
+  "title": "미끄럼틀 순서를 기다리다가 친구가 새치기했을 때 말하기",
+  "category": "conflict_resolution",
+  "description": "미끄럼틀 차례를 기다리던 중 친구가 먼저 가려 할 때 말로 순서를 알려주는 시나리오",
+  "learningGoal": [
+    "순서 기다리기 표현하기",
+    "내 차례 말하기",
+    "차분하게 요청하기"
+  ],
+  "targetSkills": [
+    "conflict_resolution",
+    "turn_taking"
+  ],
+  "context": {
+    "place": "playground",
+    "situation": "미끄럼틀 줄에서 친구가 앞에 서려는 상황",
+    "background": "아동은 미끄럼틀 앞에서 차례를 기다리고 있다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "내가 먼저 타도 돼?",
+      "expectedUserIntent": [
+        "turn_taking",
+        "conflict_repair"
+      ],
+      "acceptableResponses": [
+        "내가 먼저야",
+        "기다려줘",
+        "내 차례야"
+      ],
+      "hint": "차례를 차분하게 말해보세요.",
+      "emotionTarget": "negative",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "알겠어. 그럼 네가 먼저 타.",
+      "expectedUserIntent": [
+        "conversation_continuation",
+        "positive_emotion"
+      ],
+      "acceptableResponses": [
+        "고마워",
+        "응",
+        "다음에 너 타"
+      ],
+      "hint": "친구에게 대답해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "conflict_resolution",
+      "turn_taking"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 10,
+      "conversationContinuity": 20
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "conflict_resolution",
+      "playground"
+    ]
+  }
+}

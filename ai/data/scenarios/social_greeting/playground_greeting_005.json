@@ -1,0 +1,129 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하은",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "playground_greeting_005",
+  "title": "헤어질 때 친구에게 작별 인사하기",
+  "category": "social_greeting",
+  "description": "놀이가 끝난 뒤 친구에게 작별 인사를 하고 대화를 마무리하는 시나리오",
+  "learningGoal": [
+    "헤어질 때 인사하기",
+    "고마운 마음 말하기",
+    "대화 마무리하기"
+  ],
+  "targetSkills": [
+    "goodbye",
+    "conversation_continuation"
+  ],
+  "context": {
+    "place": "playground",
+    "situation": "놀이터 놀이가 끝나고 집에 갈 시간이 된 상황",
+    "background": "친구가 모래삽을 정리하고 손을 흔들 준비를 한다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "나는 이제 가야 해.",
+      "expectedUserIntent": [
+        "goodbye"
+      ],
+      "acceptableResponses": [
+        "잘 가",
+        "안녕",
+        "다음에 또 놀자"
+      ],
+      "hint": "친구에게 잘 가라고 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "오늘 같이 놀아서 좋았어.",
+      "expectedUserIntent": [
+        "positive_emotion",
+        "conversation_continuation"
+      ],
+      "acceptableResponses": [
+        "나도 좋아",
+        "고마워",
+        "재밌었어"
+      ],
+      "hint": "같이 논 마음을 말해보세요.",
+      "emotionTarget": "positive",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "goodbye",
+      "conversation_continuation"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 15,
+      "conversationContinuity": 15
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "social_greeting",
+      "playground"
+    ]
+  }
+}

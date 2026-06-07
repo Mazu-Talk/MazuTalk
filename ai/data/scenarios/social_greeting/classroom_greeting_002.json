@@ -1,0 +1,131 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하준",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "classroom_greeting_002",
+  "title": "유치원 교실에 들어와 친구에게 인사하기",
+  "category": "social_greeting",
+  "description": "아동이 유치원 교실에서 친구에게 아침 인사를 하고 대답을 주고받는 시나리오",
+  "learningGoal": [
+    "교실 상황에 맞게 인사하기",
+    "친구의 질문에 대답하기",
+    "짧은 대화 유지하기"
+  ],
+  "targetSkills": [
+    "greeting",
+    "conversation_continuation"
+  ],
+  "context": {
+    "place": "kindergarten_classroom",
+    "situation": "아침에 교실에 들어와 친구를 만난 상황",
+    "background": "친구가 책상에서 그림을 그리고 있다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "안녕! 오늘 왔구나.",
+      "expectedUserIntent": [
+        "greeting"
+      ],
+      "acceptableResponses": [
+        "안녕",
+        "응 안녕",
+        "좋은 아침"
+      ],
+      "hint": "친구에게 인사해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "오늘 기분 어때?",
+      "expectedUserIntent": [
+        "emotion_response",
+        "positive_emotion",
+        "negative_emotion"
+      ],
+      "acceptableResponses": [
+        "좋아",
+        "괜찮아",
+        "졸려",
+        "속상해"
+      ],
+      "hint": "오늘 기분을 짧게 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "greeting",
+      "conversation_continuation"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 15,
+      "conversationContinuity": 15
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "social_greeting",
+      "kindergarten_classroom"
+    ]
+  }
+}
