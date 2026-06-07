@@ -1,0 +1,147 @@
+{
+  "scenarioId": "playground_greeting_001",
+  "title": "놀이터에서 처음 만난 친구에게 인사하기",
+  "description": "아동이 놀이터에서 처음 만난 또래 친구에게 인사하고 짧은 대화를 이어가는 시나리오",
+  "category": "social_greeting",
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "learningGoal": [
+    "친구에게 먼저 인사하기",
+    "친구의 질문에 짧게 대답하기",
+    "놀이 제안에 좋거나 싫은 마음 표현하기"
+  ],
+  "targetSkills": [
+    "greeting",
+    "conversation_continuation",
+    "joining_play"
+  ],
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "민준",
+      "personality": "friendly"
+    }
+  ],
+  "context": {
+    "place": "playground",
+    "situation": "아동이 놀이터에서 처음 보는 친구를 만난 상황",
+    "background": "친구가 모래놀이 도구를 가지고 놀고 있고, 옆에는 빈 모래삽이 있다.",
+    "objects": [
+      "모래삽",
+      "모래통",
+      "미끄럼틀"
+    ]
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "안녕! 나는 민준이야.",
+      "expectedUserIntent": [
+        "greeting"
+      ],
+      "acceptableResponses": [
+        "안녕",
+        "안녕 민준아",
+        "반가워",
+        "나는 지우야"
+      ],
+      "hint": "친구에게 안녕이라고 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "같이 모래놀이 할래?",
+      "expectedUserIntent": [
+        "accept_invitation",
+        "reject_invitation",
+        "join_play"
+      ],
+      "acceptableResponses": [
+        "응",
+        "좋아",
+        "같이 놀자",
+        "아니",
+        "나는 미끄럼틀 탈래"
+      ],
+      "hint": "같이 놀고 싶은지 친구에게 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "반가워",
+        "같이 놀자"
+      ],
+      "feedback": "친구에게 밝은 마음을 잘 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "안 할래",
+        "무서워",
+        "속상해"
+      ],
+      "feedback": "싫거나 어려운 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "safetyGuidance": {
+    "avoid": [
+      "친구에게 억지로 다가가라고 말하지 않기",
+      "대답하지 않는 것을 실패로 표현하지 않기",
+      "낯선 사람과 실제 만남을 제안하지 않기"
+    ],
+    "fallbackUtterance": "괜찮아. 작게 안녕이라고 말해도 돼."
+  },
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "greeting",
+      "conversation_continuation"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 10,
+      "conversationContinuity": 20
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "playground",
+      "greeting"
+    ]
+  }
+}
