@@ -10,6 +10,8 @@ const useAvatarStore = create((set) => ({
   isPlaying: false,    // 현재 음성 재생 중인지 여부
   emotion: "neutral",  // 현재 감정 상태 (표정 전환용)
   character: "하은",   // 현재 선택된 캐릭터 ('하은' / '하준')
+  avatarState: "idle", // 아바타 상태 (idle / speaking / waiting / greeting)
+
 
 
   // 추가
@@ -26,6 +28,7 @@ const useAvatarStore = create((set) => ({
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setEmotion: (emotion) => set({ emotion }),
   setCharacter: (character) => set({ character }),
+  setAvatarState: (avatarState) => set({ avatarState }),
 }));
 
 export default useAvatarStore;
