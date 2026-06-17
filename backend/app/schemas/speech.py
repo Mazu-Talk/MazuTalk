@@ -58,6 +58,7 @@ class ConversationMessage(BaseModel):
 
 class SttToLlmRequest(BaseModel):
     session_id: str = Field(default="local-session")
+    turn_id: str | None = None
     stt_result: SpeechAnalysisRequest
     conversation_history: list[ConversationMessage] = Field(default_factory=list)
     child_profile: dict[str, Any] = Field(default_factory=dict)
@@ -72,14 +73,40 @@ class LlmModuleResponse(BaseModel):
 
 class SttToLlmResponse(BaseModel):
     session_id: str
+    turn_id: str | None = None
     analysis: SpeechAnalysisResponse
     llm: LlmModuleResponse
 
 
 class SttPipelineResponse(BaseModel):
     session_id: str
+    turn_id: str
     transcript: str
     stt_model: str
     stt_time_seconds: float
     analysis: SpeechAnalysisResponse
     llm: LlmModuleResponse
+
+
+class SessionTurn(BaseModel):
+    session_id: str
+    turn_id: str
+    transcript: str
+    analysis: SpeechAnalysisResponse
+    llm: LlmModuleResponse
+    stt_model: str | None = None
+    stt_time_seconds: float | None = None
+    created_at: datetime
+
+
+class SessionLogResponse(BaseModel):
+    session_id: str
+    turns: list[SessionTurn]
+
+
+class WebSocketTurnRequest(BaseModel):
+    transcript: str = Field(..., min_length=1)
+    duration_seconds: float | None = Field(default=None, gt=0)
+    response_requested_at: datetime | None = None
+    response_started_at: datetime | None = None
+    turn_id: str | None = None

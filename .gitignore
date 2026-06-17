@@ -12,6 +12,7 @@ __pycache__/
 
 # Logs
 *.log
+backend/session_logs/
 
 # OS
 .DS_Store

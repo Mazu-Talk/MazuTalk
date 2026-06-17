@@ -16,11 +16,20 @@ _MODEL_KEY: tuple[str, str, str] | None = None
 
 
 def transcribe_audio(audio_path: Path) -> SttResult:
-    model_name = os.getenv("STT_MODEL", "small")
+    model_name = os.getenv("STT_MODEL", "medium")
+    fallback_model_name = os.getenv("STT_FALLBACK_MODEL", "small")
     device = os.getenv("STT_DEVICE", "cpu")
     compute_type = os.getenv("STT_COMPUTE_TYPE", "int8")
 
-    model = load_model(model_name=model_name, device=device, compute_type=compute_type)
+    active_model_name = model_name
+    try:
+        model = load_model(model_name=model_name, device=device, compute_type=compute_type)
+    except Exception:
+        if not fallback_model_name or fallback_model_name == model_name:
+            raise
+        active_model_name = fallback_model_name
+        model = load_model(model_name=fallback_model_name, device=device, compute_type=compute_type)
+
     started = time.perf_counter()
     segments, _ = model.transcribe(
         str(audio_path),
@@ -34,7 +43,7 @@ def transcribe_audio(audio_path: Path) -> SttResult:
 
     return SttResult(
         transcript=transcript,
-        model_name=f"faster-whisper-{model_name}",
+        model_name=f"faster-whisper-{active_model_name}",
         elapsed_seconds=round(elapsed, 3),
     )
 

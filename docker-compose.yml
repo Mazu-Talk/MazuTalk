@@ -14,5 +14,10 @@ services:
       APP_ENV: ${APP_ENV:-development}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      SESSION_DB_PATH: ${SESSION_DB_PATH:-:memory:}
+      STT_MODEL: ${STT_MODEL:-medium}
+      STT_FALLBACK_MODEL: ${STT_FALLBACK_MODEL:-small}
+      STT_DEVICE: ${STT_DEVICE:-cpu}
+      STT_COMPUTE_TYPE: ${STT_COMPUTE_TYPE:-int8}
     ports:
       - "8000:8000"

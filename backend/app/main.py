@@ -1,21 +1,13 @@
 import os
-import tempfile
-from datetime import datetime
-from pathlib import Path
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.schemas.speech import (
-    SpeechAnalysisRequest,
-    SpeechAnalysisResponse,
-    SttPipelineResponse,
-    SttToLlmRequest,
-    SttToLlmResponse,
-)
-from app.services.llm_client import LlmClient
-from app.services.speech_analysis import analyze_speech
-from app.services.stt_service import transcribe_audio
+from app.api.v1.dialogue import router as dialogue_router
+from app.api.v1.sessions import router as sessions_router
+from app.api.v1.speech import router as speech_router
+from app.api.v1.stt import router as stt_router
+from app.api.v1.tts import router as tts_router
 
 app = FastAPI(title="MazuTalk API")
 
@@ -39,68 +31,14 @@ def health_check():
     return {"status": "ok"}
 
 
-@app.post("/api/speech/analyze", response_model=SpeechAnalysisResponse)
-def analyze_speech_endpoint(payload: SpeechAnalysisRequest):
-    return analyze_speech(payload)
+app.include_router(speech_router, prefix="/api/v1")
+app.include_router(dialogue_router, prefix="/api/v1")
+app.include_router(stt_router, prefix="/api/v1")
+app.include_router(sessions_router, prefix="/api/v1")
+app.include_router(tts_router, prefix="/api/v1")
 
-
-@app.post("/api/dialogue/stt-to-llm", response_model=SttToLlmResponse)
-async def stt_to_llm(payload: SttToLlmRequest):
-    analysis = analyze_speech(payload.stt_result)
-    llm = await LlmClient().respond(
-        session_id=payload.session_id,
-        transcript=analysis.transcript,
-        analysis=analysis,
-        conversation_history=[
-            message.dict() for message in payload.conversation_history
-        ],
-        child_profile=payload.child_profile,
-    )
-    return SttToLlmResponse(
-        session_id=payload.session_id,
-        analysis=analysis,
-        llm=llm,
-    )
-
-
-@app.post("/api/stt/pipeline", response_model=SttPipelineResponse)
-async def transcribe_and_continue_dialogue(
-    audio: UploadFile = File(...),
-    session_id: str = Form(default="demo-session"),
-    duration_seconds: float | None = Form(default=None),
-    response_requested_at: datetime | None = Form(default=None),
-    response_started_at: datetime | None = Form(default=None),
-):
-    suffix = Path(audio.filename or "recording.webm").suffix or ".webm"
-    temp_path = None
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_path = Path(temp_file.name)
-            temp_file.write(await audio.read())
-
-        stt = transcribe_audio(temp_path)
-        stt_payload = SpeechAnalysisRequest(
-            transcript=stt.transcript or " ",
-            duration_seconds=duration_seconds,
-            response_requested_at=response_requested_at,
-            response_started_at=response_started_at,
-        )
-        analysis = analyze_speech(stt_payload)
-        llm = await LlmClient().respond(
-            session_id=session_id,
-            transcript=analysis.transcript,
-            analysis=analysis,
-            conversation_history=[],
-            child_profile={},
-        )
-        return SttPipelineResponse(
-            session_id=session_id,
-            transcript=analysis.transcript,
-            stt_model=stt.model_name,
-            stt_time_seconds=stt.elapsed_seconds,
-            analysis=analysis,
-            llm=llm,
-        )
-    finally:
-        if temp_path and temp_path.exists():
-            temp_path.unlink()
+# Backward-compatible routes for the current frontend/API experiments.
+app.include_router(speech_router, prefix="/api", tags=["compat"])
+app.include_router(dialogue_router, prefix="/api", tags=["compat"])
+app.include_router(stt_router, prefix="/api", tags=["compat"])
+app.include_router(tts_router, tags=["compat"])
