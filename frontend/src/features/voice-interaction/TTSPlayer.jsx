@@ -17,6 +17,7 @@ function TTSPlayer() {
   // Zustand에서 값 바꾸는 함수 가져오기
   const setVolume = useAvatarStore((state) => state.setVolume);
   const setIsPlaying = useAvatarStore((state) => state.setIsPlaying);
+  const setAvatarState = useAvatarStore((state) => state.setAvatarState);
 
   // ── TTS 요청 함수 ─────────────────────────────────
   const handleTTS = async () => {
@@ -57,6 +58,7 @@ function TTSPlayer() {
       try {
         await audioElement.play();
         setIsPlaying(true); // Zustand에 재생 중 저장
+        setAvatarState("speaking");
       } catch (e) {
         console.warn("자동재생 차단됨:", e);
       }
@@ -67,6 +69,7 @@ function TTSPlayer() {
         if (audioElement.paused || audioElement.ended) {
           setVolume(0);        // 재생 끝나면 볼륨 0
           setIsPlaying(false); // Zustand에 재생 종료 저장
+          setAvatarState("waiting");
           return;
         }
         analyser.getByteFrequencyData(dataArray);
