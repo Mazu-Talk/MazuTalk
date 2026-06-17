@@ -1,6 +1,5 @@
 // frontend/src/features/voice-interaction/AvatarViewer.jsx
 // [역할] VRM 아바타 렌더링 + 립싱크 + 감정 표현 + 상태별 인터랙션 통합 컴포넌트
-// useLipSync.js, AvatarInteraction.jsx를 이 파일로 통합
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -29,15 +28,13 @@ function AvatarViewer({ avatarUrl = "/김하은.vrm" }) {
     // 모든 표정 초기화 후 현재 감정 표정 적용
     vrm.expressionManager?.setValue("happy", 0);
     vrm.expressionManager?.setValue("sad", 0);
-    vrm.expressionManager?.setValue("angry", 0);
-    vrm.expressionManager?.setValue("surprised", 0);
+    vrm.expressionManager?.setValue("Surprised", 0);
     vrm.expressionManager?.setValue("neutral", 0);
 
     const emotionMap = {
       joyful: "happy",
       sad: "sad",
-      angry: "angry",
-      surprised: "surprised",
+      surprised: "Surprised",
       neutral: "neutral",
     };
     const expression = emotionMap[emotion] || "neutral";
@@ -46,7 +43,7 @@ function AvatarViewer({ avatarUrl = "/김하은.vrm" }) {
     const expressionIntensity = {
       happy: 0.5,
       sad: 0.8,
-      angry: 0.8,
+      relaxed: 0.8,
       surprised: 0.8,
       neutral: 0,
     };
