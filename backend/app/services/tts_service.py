@@ -14,19 +14,7 @@ os.makedirs("output_audio", exist_ok=True)
 model = TTS(language='KR', device='auto')
 speaker_id = model.hps.data.spk2id['KR']  # 한국어 화자 ID
 
-def generate_tts(text: str, speed: float = 0.8) -> str:
-    """
-    텍스트를 음성 파일로 변환하는 함수
-    
-    Args:
-        text  : 변환할 텍스트 (예: "안녕! 나 미래야.")
-        speed : 말하는 속도 (기본값 0.8 / 1.0이 보통 속도 / 낮을수록 느림)
-    
-    Returns:
-        file_id : 생성된 음성 파일의 고유 ID (예: "abc123.wav"에서 "abc123" 부분)
-                  → tts_v3.py에서 이 값으로 audio_url을 만듦
-    """
-
+def generate_tts(text: str, speed: float = 1.1) -> str:
     # 파일 이름 중복 방지를 위해 uuid로 고유한 ID 생성
     # (예: "3f2a1b4c-...")
     file_id = str(uuid.uuid4())

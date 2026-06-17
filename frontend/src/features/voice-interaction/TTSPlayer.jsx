@@ -7,7 +7,7 @@ import useAvatarStore from "../store/avatarStore";
 
 function TTSPlayer() {
   // ── 상태(state) 정의 ──────────────────────────────
-  const [text, setText] = useState("안녕! 나 미래야. 같이 놀자!"); // 텍스트 입력창 내용
+  const [text, setText] = useState("안녕, 나는 하준이야. 같이 놀자!"); // 텍스트 입력창 내용
   const [isLoading, setIsLoading] = useState(false);               // 변환 중 여부 (버튼 비활성화용)
   const [audioUrl, setAudioUrl] = useState(null);                  // 받아온 음성 URL 저장
 
@@ -28,7 +28,7 @@ function TTSPlayer() {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text, speed: 0.8 }),
+        body: JSON.stringify({ text: text, speed: 1.1 }),
       });
 
       // 응답에서 audio_url 추출
