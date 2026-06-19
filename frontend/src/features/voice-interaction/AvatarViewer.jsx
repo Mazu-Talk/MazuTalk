@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin } from "@pixiv/three-vrm";
-import useAvatarStore from "../store/avatarStore";
+import useSessionStore from "../store/sessionStore";
 
 function AvatarViewer({ avatarUrl = "/김하은.vrm" }) {
   const mountRef = useRef(null);
@@ -19,7 +19,7 @@ function AvatarViewer({ avatarUrl = "/김하은.vrm" }) {
   const greetTimerRef = useRef(0);   // 인사 애니메이션 타이머
 
   // ── 감정 변할 때마다 표정 전환 ────────────────────────────────────
-  const emotion = useAvatarStore((state) => state.emotion);
+  const emotion = useSessionStore((state) => state.emotion);
 
   useEffect(() => {
     if (!vrmRef.current) return;
@@ -88,7 +88,7 @@ function AvatarViewer({ avatarUrl = "/김하은.vrm" }) {
         const t = timeRef.current;
 
         // Zustand에서 직접 읽기 → 루프 재실행 없이 최신 상태 반영
-        const { volume, avatarState } = useAvatarStore.getState();
+        const { volume, avatarState } = useSessionStore.getState();
 
         // ── 립싱크: 볼륨 → 입 BlendShape ──────────────────────────
         // 볼륨에 제곱 적용 → 작은 값은 더 작게, 큰 값은 더 크게
@@ -233,7 +233,7 @@ function AvatarViewer({ avatarUrl = "/김하은.vrm" }) {
         vrm.scene.scale.set(1.5, 1.5, 1.5);
 
         // VRM 로드 완료 시 idle 상태로 초기화
-        useAvatarStore.getState().setAvatarState("idle");
+        useSessionStore.getState().setAvatarState("idle");
         console.log("아바타 로드 완료!");
       },
       (progress) => {

@@ -1,5 +1,5 @@
 # backend/app/services/tts_service.py
-# [역할] MeloTTS 핵심 로직 담당
+# [역할] MeloTTS 핵심 변환 로직 담당
 # tts.py(엔드포인트)에서 이 파일의 generate_tts()를 호출해서 사용
 # 모델 로드처럼 무거운 작업은 여기서 한 번만 처리
 
