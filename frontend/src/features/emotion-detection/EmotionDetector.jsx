@@ -9,16 +9,21 @@ import useSessionStore from "../../store/sessionStore";
 // 감정 클래스 순서 (Roboflow 학습 시 알파벳 순으로 정렬됨)
 const CLASSES = ["happy", "neutral", "sad", "surprised"];
 
+// 감정 로그 누적 간격 (매 프레임마다 저장하면 너무 많아서 1초마다 저장)
+const LOG_INTERVAL_MS = 1000;
+
 function EmotionDetector() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const sessionRef = useRef(null);   // ONNX 세션
-  const animFrameRef = useRef(null); // 애니메이션 프레임 ID
+  const sessionRef = useRef(null);      // ONNX 세션
+  const animFrameRef = useRef(null);    // 애니메이션 프레임 ID
+  const lastLogTimeRef = useRef(0);     // 마지막 로그 저장 시각
   const [status, setStatus] = useState("초기화 중...");
   const [scores, setScores] = useState([]);
 
-  // Zustand에 감정 저장
+  // Zustand에서 함수 가져오기
   const setEmotion = useSessionStore((state) => state.setEmotion);
+  const addEmotionLog = useSessionStore((state) => state.addEmotionLog); // 로그 누적
 
   useEffect(() => {
     const init = async () => {
@@ -62,14 +67,18 @@ function EmotionDetector() {
 
             // 신뢰도 50% 이상일 때만 감정 업데이트
             if (confidence > 0.5) {
-              // YOLOv8 클래스명 → sessionStore 감정명으로 변환
-              const emotionMap = {
-                happy: "happy",
-                sad: "sad",
-                surprised: "surprised",
-                neutral: "neutral",
-              };
-              setEmotion(emotionMap[dominantEmotion]);
+              setEmotion(dominantEmotion);
+
+              // 1초마다 감정 로그 누적
+              const now = Date.now();
+              if (now - lastLogTimeRef.current >= LOG_INTERVAL_MS) {
+                lastLogTimeRef.current = now;
+                addEmotionLog({
+                  label: dominantEmotion,
+                  confidence: parseFloat(confidence.toFixed(3)),
+                  timestamp: now,
+                });
+              }
             }
 
             setScores(softmaxScores.map((s, i) => ({
@@ -102,8 +111,8 @@ function EmotionDetector() {
     const float32 = new Float32Array(3 * width * height);
 
     for (let i = 0; i < width * height; i++) {
-      float32[i] = data[i * 4] / 255.0;                      // R
-      float32[i + width * height] = data[i * 4 + 1] / 255.0; // G
+      float32[i] = data[i * 4] / 255.0;                          // R
+      float32[i + width * height] = data[i * 4 + 1] / 255.0;     // G
       float32[i + 2 * width * height] = data[i * 4 + 2] / 255.0; // B
     }
 
