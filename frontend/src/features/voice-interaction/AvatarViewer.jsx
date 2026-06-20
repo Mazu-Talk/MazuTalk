@@ -32,7 +32,7 @@ function AvatarViewer({ avatarUrl = "/김하은.vrm" }) {
     vrm.expressionManager?.setValue("neutral", 0);
 
     const emotionMap = {
-      joyful: "happy",
+      happy: "happy",
       sad: "sad",
       surprised: "Surprised",
       neutral: "neutral",

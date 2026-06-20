@@ -64,7 +64,7 @@ function EmotionDetector() {
             if (confidence > 0.5) {
               // YOLOv8 클래스명 → sessionStore 감정명으로 변환
               const emotionMap = {
-                happy: "joyful",
+                happy: "happy",
                 sad: "sad",
                 surprised: "surprised",
                 neutral: "neutral",
