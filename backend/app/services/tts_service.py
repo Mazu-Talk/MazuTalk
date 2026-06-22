@@ -17,12 +17,17 @@ speaker_id = None
 
 def get_model():
     global model, speaker_id
+    import threading
 
-    if model is None:
-        from melo.api import TTS
+    if not hasattr(get_model, "_lock"):
+        get_model._lock = threading.Lock()
 
-        model = TTS(language="KR", device="auto")
-        speaker_id = model.hps.data.spk2id["KR"]
+    with get_model._lock:
+        if model is None:
+            from melo.api import TTS
+
+            model = TTS(language="KR", device="auto")
+            speaker_id = model.hps.data.spk2id["KR"]
     return model, speaker_id
 
 
