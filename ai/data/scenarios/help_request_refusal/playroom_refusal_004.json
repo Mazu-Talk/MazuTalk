@@ -1,0 +1,130 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하준",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "playroom_refusal_004",
+  "title": "친구가 같이 하자고 했지만 지금은 하기 싫다고 말하기",
+  "category": "help_request_refusal",
+  "description": "친구의 놀이 제안을 원하지 않을 때 부드럽게 거절하는 시나리오",
+  "learningGoal": [
+    "하기 싫은 마음 말하기",
+    "부드럽게 거절하기",
+    "다른 선택 표현하기"
+  ],
+  "targetSkills": [
+    "refusal",
+    "conversation_continuation"
+  ],
+  "context": {
+    "place": "kindergarten_playroom",
+    "situation": "친구가 역할놀이를 같이 하자고 했지만 아동은 쉬고 싶은 상황",
+    "background": "친구가 인형을 들고 아동에게 다가온다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "나랑 역할놀이 할래?",
+      "expectedUserIntent": [
+        "reject_invitation",
+        "state_preference"
+      ],
+      "acceptableResponses": [
+        "지금은 안 할래",
+        "쉬고 싶어",
+        "다른 거 할래"
+      ],
+      "hint": "지금 하고 싶은 마음을 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "알겠어. 그럼 나중에 할까?",
+      "expectedUserIntent": [
+        "accept_invitation",
+        "conversation_continuation"
+      ],
+      "acceptableResponses": [
+        "응",
+        "나중에 하자",
+        "좋아"
+      ],
+      "hint": "나중에 할지 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "refusal",
+      "conversation_continuation"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 10,
+      "conversationContinuity": 20
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "help_request_refusal",
+      "kindergarten_playroom"
+    ]
+  }
+}

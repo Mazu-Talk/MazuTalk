@@ -1,0 +1,131 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하준",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "playground_emotion_004",
+  "title": "친구가 같이 놀아주지 않아 서운한 마음 말하기",
+  "category": "emotion_expression",
+  "description": "친구가 함께 놀지 않을 때 아동이 서운한 마음과 함께 놀고 싶은 마음을 표현하는 시나리오",
+  "learningGoal": [
+    "서운한 마음 표현하기",
+    "같이 놀고 싶은 마음 말하기",
+    "친구의 대답 기다리기"
+  ],
+  "targetSkills": [
+    "emotion_expression",
+    "joining_play"
+  ],
+  "context": {
+    "place": "playground",
+    "situation": "친구가 다른 놀이를 하느라 아동과 놀지 않는 상황",
+    "background": "친구가 모래성 만들기에 집중하고 있다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "나는 지금 모래성 만들고 있었어.",
+      "expectedUserIntent": [
+        "negative_emotion",
+        "join_play"
+      ],
+      "acceptableResponses": [
+        "서운해",
+        "나도 같이 놀래",
+        "같이 하고 싶어"
+      ],
+      "hint": "같이 놀고 싶은 마음을 말해보세요.",
+      "emotionTarget": "negative",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "그랬구나. 같이 깃발 꽂을래?",
+      "expectedUserIntent": [
+        "accept_invitation",
+        "reject_invitation"
+      ],
+      "acceptableResponses": [
+        "응",
+        "좋아",
+        "아니",
+        "다른 거 할래"
+      ],
+      "hint": "친구의 제안에 대답해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "emotion_expression",
+      "joining_play"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 30,
+      "conversationContinuity": 0
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "emotion_expression",
+      "playground"
+    ]
+  }
+}

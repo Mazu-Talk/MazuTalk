@@ -1,0 +1,130 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하준",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "playroom_conflict_004",
+  "title": "블록 놀이 중 친구가 내가 만든 것을 무너뜨렸을 때 말하기",
+  "category": "conflict_resolution",
+  "description": "친구가 블록 작품을 무너뜨렸을 때 속상한 마음을 말하고 다시 만들자고 제안하는 시나리오",
+  "learningGoal": [
+    "속상한 마음 말하기",
+    "다시 만들자고 제안하기",
+    "밀거나 소리치지 않고 말하기"
+  ],
+  "targetSkills": [
+    "conflict_resolution",
+    "emotion_expression"
+  ],
+  "context": {
+    "place": "kindergarten_playroom",
+    "situation": "친구가 실수로 아동이 만든 블록 집을 무너뜨린 상황",
+    "background": "블록 조각들이 바닥에 흩어져 있다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "앗, 미안. 블록이 무너졌어.",
+      "expectedUserIntent": [
+        "negative_emotion",
+        "conflict_repair"
+      ],
+      "acceptableResponses": [
+        "속상해",
+        "다시 만들자",
+        "조심해줘"
+      ],
+      "hint": "속상한 마음을 말로 표현해보세요.",
+      "emotionTarget": "negative",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "같이 다시 만들어줄게.",
+      "expectedUserIntent": [
+        "accept_help",
+        "conversation_continuation"
+      ],
+      "acceptableResponses": [
+        "응",
+        "고마워",
+        "같이 만들자"
+      ],
+      "hint": "친구의 도움에 대답해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "conflict_resolution",
+      "emotion_expression"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 25,
+      "conversationContinuity": 5
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "conflict_resolution",
+      "kindergarten_playroom"
+    ]
+  }
+}

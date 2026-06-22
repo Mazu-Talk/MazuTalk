@@ -1,0 +1,132 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하은",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "artroom_help_005",
+  "title": "만들기 활동에서 색연필이나 풀을 친구에게 빌려 달라고 말하기",
+  "category": "help_request_refusal",
+  "description": "만들기 활동 중 필요한 물건을 친구에게 빌려 달라고 요청하는 시나리오",
+  "learningGoal": [
+    "필요한 물건 말하기",
+    "친구에게 빌려 달라고 말하기",
+    "고맙다고 표현하기"
+  ],
+  "targetSkills": [
+    "requesting_help",
+    "ask_permission",
+    "sharing"
+  ],
+  "context": {
+    "place": "kindergarten_art_room",
+    "situation": "만들기 활동 중 색연필이나 풀이 필요한 상황",
+    "background": "친구가 여러 색연필과 풀을 책상 위에 올려두고 있다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "나는 파란 색연필을 쓰고 있어.",
+      "expectedUserIntent": [
+        "request_object",
+        "ask_permission"
+      ],
+      "acceptableResponses": [
+        "빌려줄래",
+        "나도 써도 돼",
+        "풀 빌려줄래"
+      ],
+      "hint": "필요한 물건을 빌려 달라고 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "응, 다 쓰면 줄게.",
+      "expectedUserIntent": [
+        "turn_taking",
+        "conversation_continuation"
+      ],
+      "acceptableResponses": [
+        "고마워",
+        "기다릴게",
+        "좋아"
+      ],
+      "hint": "기다리거나 고맙다고 말해보세요.",
+      "emotionTarget": "positive",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "requesting_help",
+      "ask_permission",
+      "sharing"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 10,
+      "conversationContinuity": 20
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "help_request_refusal",
+      "kindergarten_art_room"
+    ]
+  }
+}
