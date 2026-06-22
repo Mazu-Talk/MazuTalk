@@ -102,4 +102,3 @@ def iter_split(df: pd.DataFrame, split: str | None, limit: int | None) -> pd.Dat
     if limit is not None:
         df = df.head(limit)
     return df.reset_index(drop=True)
-
