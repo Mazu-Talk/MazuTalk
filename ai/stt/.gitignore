@@ -1,0 +1,23 @@
+# Keep STT datasets and experiment outputs out of Git by default.
+data/raw/**
+data/processed/**
+results/**
+
+!data/
+!data/raw/
+!data/raw/wav/
+!data/raw/wav/.gitkeep
+!data/raw/labels/
+!data/raw/labels/.gitkeep
+!data/processed/
+!data/processed/.gitkeep
+!data/processed/wav/
+!data/processed/wav/.gitkeep
+!results/
+!results/.gitkeep
+!results/whisper/
+!results/whisper/.gitkeep
+!results/faster-whisper/
+!results/faster-whisper/.gitkeep
+!results/metrics/
+!results/metrics/.gitkeep
