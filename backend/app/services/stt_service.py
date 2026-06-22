@@ -50,12 +50,17 @@ def transcribe_audio(audio_path: Path) -> SttResult:
 
 def load_model(model_name: str, device: str, compute_type: str):
     global _MODEL, _MODEL_KEY
+    import threading
+
+    if not hasattr(load_model, "_lock"):
+        load_model._lock = threading.Lock()
 
     model_key = (model_name, device, compute_type)
-    if _MODEL is None or _MODEL_KEY != model_key:
-        from faster_whisper import WhisperModel
+    with load_model._lock:
+        if _MODEL is None or _MODEL_KEY != model_key:
+            from faster_whisper import WhisperModel
 
-        _MODEL = WhisperModel(model_name, device=device, compute_type=compute_type)
-        _MODEL_KEY = model_key
+            _MODEL = WhisperModel(model_name, device=device, compute_type=compute_type)
+            _MODEL_KEY = model_key
 
     return _MODEL
