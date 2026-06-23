@@ -354,6 +354,65 @@ def ollama_chat(
 
 
 # --------------------------------------------------------------------------
+# OpenAI 클라이언트 (teacher 용) — OPENAI_API_KEY 환경변수 필요
+# --------------------------------------------------------------------------
+
+def openai_chat(
+    model: str,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float = 0.7,
+    seed: int | None = DEFAULT_SEED,
+    max_tokens: int = 1024,
+    force_json: bool = True,
+    timeout: int = 120,
+) -> str:
+    """OpenAI Chat Completions 호출. assistant content(문자열) 반환.
+
+    force_json=True 면 response_format=json_object 로 JSON 출력을 강제한다
+    (teacher 데이터 품질·파싱 안정성 ↑). seed 고정으로 재현성 확보.
+    `openai` 패키지와 OPENAI_API_KEY 가 필요하다.
+    """
+    from openai import OpenAI  # 지연 import (로컬 baseline 경로엔 불필요)
+
+    client = OpenAI(timeout=timeout)
+    kwargs: dict[str, Any] = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    if seed is not None:
+        kwargs["seed"] = seed
+    if force_json:
+        # response_format=json_object 사용 시 프롬프트에 'json' 토큰이 있어야 함
+        kwargs["response_format"] = {"type": "json_object"}
+    resp = client.chat.completions.create(**kwargs)
+    return resp.choices[0].message.content or ""
+
+
+def teacher_generate(
+    backend: str,
+    model: str,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float = 0.7,
+    max_new: int = 1024,
+    seed: int | None = DEFAULT_SEED,
+) -> str:
+    """teacher 백엔드 디스패처. backend in {'ollama','openai'}."""
+    if backend == "openai":
+        return openai_chat(model, messages, temperature=temperature,
+                           max_tokens=max_new, seed=seed)
+    return ollama_chat(model, messages, temperature=temperature,
+                       num_predict=max_new, think=False, seed=seed)
+
+
+# 백엔드별 기본 teacher 모델
+DEFAULT_TEACHER = {"ollama": "qwen3.5:4b", "openai": "gpt-4o-mini"}
+
+
+# --------------------------------------------------------------------------
 # 출력 파싱/검증
 # --------------------------------------------------------------------------
 
