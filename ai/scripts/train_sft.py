@@ -49,7 +49,9 @@ def main() -> int:
     tcfg = load_yaml(args.train_config)
     out_dir = str(args.out or tcfg["output_dir"])
 
-    compute_dtype = getattr(torch, mcfg.get("bnb_4bit_compute_dtype", "bfloat16"))
+    # 학습 precision(fp16/bf16)과 4bit 연산 dtype를 일치시킨다.
+    # (불일치 시 fp16 GradScaler가 bf16 그래디언트를 못 다뤄 학습이 깨짐 — T4는 fp16)
+    compute_dtype = torch.bfloat16 if tcfg.get("bf16") else torch.float16
     bnb = BitsAndBytesConfig(
         load_in_4bit=mcfg.get("load_in_4bit", True),
         bnb_4bit_quant_type=mcfg.get("bnb_4bit_quant_type", "nf4"),
