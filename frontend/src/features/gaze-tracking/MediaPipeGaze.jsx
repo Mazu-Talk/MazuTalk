@@ -1,17 +1,27 @@
-// [역할] MediaPipe 기반 시선 추적 실험용 컴포넌트
+// frontend/src/features/gaze-tracking/MediaPipeGaze.jsx
+// [역할] MediaPipe 기반 실시간 시선 추적 컴포넌트
+// 웹캠 영상 → FaceLandmarker → 홍채 위치 분석 → 시선 방향 판별 → sessionStore에 저장
 
 import { useEffect, useRef, useState } from "react";
 import { FaceLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
+import useSessionStore from "../../store/sessionStore";
 
-function MediaPipeTest() {
+// 시선 로그 누적 간격 (1초마다 저장)
+const LOG_INTERVAL_MS = 1000;
+
+function MediaPipeGaze() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const animFrameRef = useRef(null);    // 애니메이션 프레임 ID
+  const lastLogTimeRef = useRef(0);     // 마지막 로그 저장 시각
   const [status, setStatus] = useState("초기화 중...");
   const [gazeResult, setGazeResult] = useState(null);
 
+  // Zustand에서 함수 가져오기
+  const addGazeLog = useSessionStore((state) => state.addGazeLog); // 시선 로그 누적
+
   useEffect(() => {
     let faceLandmarker;
-    let animFrame;
 
     const init = async () => {
       try {
@@ -64,6 +74,7 @@ function MediaPipeTest() {
               );
 
               // ── 시선 추적 ──────────────────────────────
+              // 왼쪽 홍채(468), 눈 안쪽(33), 눈 바깥쪽(133) 랜드마크 활용
               const leftIris = landmarks[468];
               const leftEyeInner = landmarks[33];
               const leftEyeOuter = landmarks[133];
@@ -72,14 +83,27 @@ function MediaPipeTest() {
                 const eyeWidth = Math.abs(leftEyeOuter.x - leftEyeInner.x);
                 const irisPos = (leftIris.x - leftEyeInner.x) / eyeWidth;
 
-                let gazeDirection = "정면";
-                if (irisPos < 0.35) gazeDirection = "오른쪽 ←";
-                else if (irisPos > 0.65) gazeDirection = "왼쪽 →";
+                // 시선 방향 판별
+                // irisPos < 0.35 → right / irisPos > 0.65 → left / 그 외 → center
+                let gazeDirection = "center";
+                if (irisPos < 0.35) gazeDirection = "right";
+                else if (irisPos > 0.65) gazeDirection = "left";
 
                 setGazeResult(`시선: ${gazeDirection} (${irisPos.toFixed(2)})`);
+
+                // 1초마다 시선 로그 누적
+                const now = Date.now();
+                if (now - lastLogTimeRef.current >= LOG_INTERVAL_MS) {
+                  lastLogTimeRef.current = now;
+                  addGazeLog({
+                    direction: gazeDirection,
+                    irisPos: parseFloat(irisPos.toFixed(3)),
+                    timestamp: now,
+                  });
+                }
               }
 
-              // 홍채 표시
+              // 홍채 표시 (초록색 점)
               [landmarks[468], landmarks[473]].forEach((iris) => {
                 if (iris) {
                   ctx.beginPath();
@@ -93,7 +117,7 @@ function MediaPipeTest() {
               setGazeResult("얼굴 감지 안 됨");
             }
           }
-          animFrame = requestAnimationFrame(detect);
+          animFrameRef.current = requestAnimationFrame(detect);
         };
         detect();
 
@@ -105,7 +129,7 @@ function MediaPipeTest() {
     init();
 
     return () => {
-      if (animFrame) cancelAnimationFrame(animFrame);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(t => t.stop());
       }
@@ -114,7 +138,7 @@ function MediaPipeTest() {
 
   return (
     <div>
-      <h2>MediaPipe 시선 추적 실험</h2>
+      <h2>시선 추적</h2>
       <p>상태: {status}</p>
       <p>{gazeResult ?? "대기 중"}</p>
       <div>
@@ -125,4 +149,4 @@ function MediaPipeTest() {
   );
 }
 
-export default MediaPipeTest;
+export default MediaPipeGaze;

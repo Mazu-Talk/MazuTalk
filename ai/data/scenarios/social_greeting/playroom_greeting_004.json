@@ -1,0 +1,135 @@
+{
+  "difficulty": "easy",
+  "targetAge": {
+    "min": 5,
+    "max": 8
+  },
+  "characters": [
+    {
+      "characterId": "child",
+      "role": "learner",
+      "name": "사용자"
+    },
+    {
+      "characterId": "friend",
+      "role": "ai_partner",
+      "name": "하준",
+      "personality": "friendly"
+    }
+  ],
+  "emotionRules": [
+    {
+      "emotion": "positive",
+      "keywords": [
+        "좋아",
+        "재밌어",
+        "기뻐",
+        "고마워"
+      ],
+      "feedback": "밝은 마음을 말로 표현했어요."
+    },
+    {
+      "emotion": "negative",
+      "keywords": [
+        "싫어",
+        "무서워",
+        "속상해",
+        "화나"
+      ],
+      "feedback": "불편한 마음을 말로 표현한 것은 좋아요."
+    },
+    {
+      "emotion": "passive",
+      "keywords": [
+        "몰라",
+        "음",
+        "..."
+      ],
+      "feedback": "짧게라도 반응하려는 시도를 확인했어요."
+    }
+  ],
+  "scenarioId": "playroom_greeting_004",
+  "title": "친구 놀이에 끼고 싶어서 말 걸기",
+  "category": "social_greeting",
+  "description": "아동이 친구들의 놀이에 참여하고 싶을 때 먼저 말 거는 연습을 하는 시나리오",
+  "learningGoal": [
+    "놀이에 참여하고 싶다고 말하기",
+    "친구에게 허락 구하기",
+    "친구의 대답 기다리기"
+  ],
+  "targetSkills": [
+    "greeting",
+    "joining_play",
+    "ask_permission"
+  ],
+  "context": {
+    "place": "kindergarten_playroom",
+    "situation": "친구들이 블록 놀이를 하고 있고 아동도 함께하고 싶은 상황",
+    "background": "친구들이 바닥에 앉아 블록으로 집을 만들고 있다."
+  },
+  "dialogueFlow": [
+    {
+      "stepId": "step_001",
+      "speaker": "ai_partner",
+      "utterance": "우리는 블록 집 만들고 있어.",
+      "expectedUserIntent": [
+        "join_play",
+        "ask_permission",
+        "greeting"
+      ],
+      "acceptableResponses": [
+        "나도 해도 돼",
+        "같이 놀래",
+        "안녕",
+        "나도 하고 싶어"
+      ],
+      "hint": "같이 놀고 싶다고 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "step_002"
+    },
+    {
+      "stepId": "step_002",
+      "speaker": "ai_partner",
+      "utterance": "좋아. 너는 어떤 블록을 놓을래?",
+      "expectedUserIntent": [
+        "state_preference",
+        "conversation_continuation"
+      ],
+      "acceptableResponses": [
+        "빨간 블록",
+        "이거 할래",
+        "큰 블록",
+        "몰라"
+      ],
+      "hint": "쓰고 싶은 블록을 말해보세요.",
+      "emotionTarget": "neutral",
+      "nextStep": "end"
+    }
+  ],
+  "evaluationCriteria": {
+    "intentMatched": true,
+    "minUtteranceLength": 1,
+    "requiredSkill": [
+      "greeting",
+      "joining_play",
+      "ask_permission"
+    ],
+    "scoringRule": {
+      "intentMatch": 40,
+      "contextAppropriate": 30,
+      "emotionExpression": 10,
+      "conversationContinuity": 20
+    }
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "createdBy": "team",
+    "lastUpdated": "2026-06-07",
+    "tags": [
+      "mvp",
+      "peer-interaction",
+      "social_greeting",
+      "kindergarten_playroom"
+    ]
+  }
+}

@@ -27,7 +27,7 @@
     {
       "characterId": "friend",
       "role": "ai_partner",
-      "name": "민준",
+      "name": "하은",
       "personality": "friendly"
     }
   ],
@@ -45,13 +45,13 @@
     {
       "stepId": "step_001",
       "speaker": "ai_partner",
-      "utterance": "안녕! 나는 민준이야.",
+      "utterance": "안녕! 나는 하은이야.",
       "expectedUserIntent": [
         "greeting"
       ],
       "acceptableResponses": [
         "안녕",
-        "안녕 민준아",
+        "안녕 하은아",
         "반가워",
         "나는 지우야"
       ],

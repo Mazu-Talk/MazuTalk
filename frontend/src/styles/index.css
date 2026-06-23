@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: linear-gradient(180deg, #eef7ff 0%, #fffaf0 100%);
+    color: #1c3e72;
+    -webkit-font-smoothing: antialiased;
+    /* 아동 사용자가 실수로 텍스트를 드래그/선택하지 않도록 */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 큰 터치/클릭 영역 — NFR-004 큰 버튼, NFR-006 마우스만으로 사용 */
+  button {
+    cursor: pointer;
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  /* 공통 카드 표면 */
+  .surface {
+    @apply rounded-3xl bg-white/80 backdrop-blur shadow-card;
+  }
+}
+
+/* 접근성: 모션 민감 사용자를 위한 감속 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
