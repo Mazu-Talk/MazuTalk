@@ -1,0 +1,19 @@
+# 기준 모델 설정 (계획서 §1).
+# qwen3.5:4b(Ollama, 추론용 GGUF)에 대응하는 HF 원본 instruct 체크포인트를
+# 실제 환경에서 확정해 base_model 에 고정한다. (재현성: revision 도 함께 고정)
+#
+# 후보 예시(환경에서 실재 여부·정확한 id 확인 후 사용):
+#   - Qwen/Qwen3-4B-Instruct  (Qwen3 4B instruct)
+# ※ Ollama 의 architecture 가 'qwen35' 로 표기되므로, 대응하는 HF id 를
+#   ollama show / HF 카드에서 교차 확인하고 아래 값을 교체할 것.
+
+base_model: "Qwen/Qwen3-4B-Instruct-2507"
+revision: null            # 예: "main" 또는 특정 커밋 해시로 고정 권장
+trust_remote_code: true
+enable_thinking: false    # 서빙/학습/평가 전 구간 동일 (JSON-only 안정화)
+
+# 학습 시 4-bit 양자화 로딩(QLoRA)
+load_in_4bit: true
+bnb_4bit_quant_type: "nf4"
+bnb_4bit_compute_dtype: "bfloat16"
+bnb_4bit_use_double_quant: true
