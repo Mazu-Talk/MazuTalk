@@ -15,5 +15,7 @@ enable_thinking: false    # 서빙/학습/평가 전 구간 동일 (JSON-only �
 # 학습 시 4-bit 양자화 로딩(QLoRA)
 load_in_4bit: true
 bnb_4bit_quant_type: "nf4"
-bnb_4bit_compute_dtype: "bfloat16"
+# T4(fp16) 기준 float16. 학습 스크립트는 sft/dpo.yaml의 fp16/bf16에 맞춰 자동 정렬하고,
+# 이 값은 infer_hf(추론)에서 참조한다. L4/A100에서 bf16 쓰면 "bfloat16"으로 바꿔도 됨.
+bnb_4bit_compute_dtype: "float16"
 bnb_4bit_use_double_quant: true
