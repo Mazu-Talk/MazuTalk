@@ -17,6 +17,7 @@ seed 시나리오(ai/data/scenarios) × (감정 × 발화유형 × 난이도) �
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -60,7 +61,8 @@ def validate_assistant(parsed: dict[str, Any]) -> bool:
     return True
 
 
-def generate(teacher: str, max_turns: int, eval_path: Path, per_scenario: int) -> list[dict[str, Any]]:
+def generate(backend: str, teacher: str, max_turns: int, eval_path: Path,
+             per_scenario: int, ages: list[int]) -> list[dict[str, Any]]:
     scenarios = C.iter_scenarios()
     exclude = _eval_combo_keys(eval_path)
     system_prompt = C.load_system_prompt(runtime=True)
@@ -76,55 +78,60 @@ def generate(teacher: str, max_turns: int, eval_path: Path, per_scenario: int) -
         target_skill = (scenario.get("targetSkills") or ["unknown"])[0]
         scen_id = scenario.get("scenarioId")
 
-        made = 0
+        combos = 0
         for j in range(len(bev.ROLEPLAY_CASES)):
-            if made >= per_scenario or len(rows) >= max_turns:
+            if combos >= per_scenario or len(rows) >= max_turns:
                 break
             emotion, utt_type, feats, strat = bev.ROLEPLAY_CASES[j]
             if (scen_id, emotion, utt_type) in exclude:
                 continue  # 누수 방지
-            difficulty = DIFFICULTIES[(idx + j) % len(DIFFICULTIES)]
-            runtime = C.scenario_to_runtime(
-                scenario, target_skill=target_skill, difficulty=difficulty,
-                emotion_state=emotion, child_input=bev._child_input(step, strat),
-                observed_features=feats,
-            )
-            import json
-            user_content = json.dumps(runtime, ensure_ascii=False)
-            attempted += 1
-            try:
-                raw = C.ollama_chat(
-                    teacher,
-                    [{"role": "system", "content": system_prompt},
-                     {"role": "user", "content": user_content}],
-                    temperature=0.7, num_predict=1024, think=False,
-                    seed=C.DEFAULT_SEED + attempted,
+            combos += 1
+            # 나이별 변주: 나이에 따라 난이도도 회전시켜 타깃 다양화
+            for ai, age in enumerate(ages):
+                if len(rows) >= max_turns:
+                    break
+                difficulty = DIFFICULTIES[(idx + j + ai) % len(DIFFICULTIES)]
+                runtime = C.scenario_to_runtime(
+                    scenario, target_skill=target_skill, difficulty=difficulty,
+                    emotion_state=emotion, child_input=bev._child_input(step, strat),
+                    observed_features=feats, child_age=age,
                 )
-            except Exception as exc:  # noqa: BLE001
-                print(f"  teacher error {scen_id}/{emotion}/{utt_type}: {exc}")
-                continue
-            parsed = C.extract_json(raw)
-            if not parsed or not validate_assistant(parsed):
-                continue
-            rows.append({
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content},
-                    {"role": "assistant", "content": json.dumps(parsed, ensure_ascii=False)},
-                ],
-                "metadata": {
-                    "scenario_id": scen_id,
-                    "target_skill": target_skill,
-                    "difficulty": difficulty,
-                    "emotion": emotion,
-                    "utterance_type": utt_type,
-                    "strategy": parsed.get("coaching", {}).get("strategy"),
-                    "teacher": teacher,
-                },
-            })
-            kept += 1
-            made += 1
-            print(f"[{kept}] kept {scen_id} {emotion}/{utt_type}/{difficulty}")
+                user_content = json.dumps(runtime, ensure_ascii=False)
+                attempted += 1
+                try:
+                    raw = C.teacher_generate(
+                        backend, teacher,
+                        [{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": user_content}],
+                        temperature=0.7, max_new=1024,
+                        seed=C.DEFAULT_SEED + attempted,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    print(f"  teacher error {scen_id}/{emotion}/{utt_type}/age{age}: {exc}")
+                    continue
+                parsed = C.extract_json(raw)
+                if not parsed or not validate_assistant(parsed):
+                    continue
+                rows.append({
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                        {"role": "assistant", "content": json.dumps(parsed, ensure_ascii=False)},
+                    ],
+                    "metadata": {
+                        "scenario_id": scen_id,
+                        "target_skill": target_skill,
+                        "difficulty": difficulty,
+                        "emotion": emotion,
+                        "utterance_type": utt_type,
+                        "child_age": age,
+                        "strategy": parsed.get("coaching", {}).get("strategy"),
+                        "teacher": teacher,
+                        "teacher_backend": backend,
+                    },
+                })
+                kept += 1
+                print(f"[{kept}] kept {scen_id} {emotion}/{utt_type}/{difficulty}/age{age}")
 
     print(f"\n생성 시도 {attempted}, 채택 {kept} (탈락률 {100*(attempted-kept)/max(attempted,1):.0f}%)")
     return rows
@@ -132,18 +139,24 @@ def generate(teacher: str, max_turns: int, eval_path: Path, per_scenario: int) -
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="MazuTalk SFT 데이터 생성")
-    parser.add_argument("--teacher", default="qwen3.5:4b",
-                        help="teacher 모델(Ollama). 강한 모델 권장.")
-    parser.add_argument("--per-scenario", type=int, default=6)
+    parser.add_argument("--backend", choices=["ollama", "openai"], default="ollama",
+                        help="teacher 백엔드. openai 는 OPENAI_API_KEY 필요.")
+    parser.add_argument("--teacher", default=None,
+                        help="teacher 모델. 미지정 시 backend 기본값(ollama=qwen3.5:4b, openai=gpt-4o-mini)")
+    parser.add_argument("--per-scenario", type=int, default=9)
+    parser.add_argument("--ages", default="6,7,8",
+                        help="child_age 변주(쉼표구분). 조합당 나이별로 샘플 생성해 볼륨 확장.")
     parser.add_argument("--max", type=int, default=2000)
     parser.add_argument("--eval", type=Path, default=C.PROCESSED_DIR / "eval_set.jsonl")
     parser.add_argument("--out", type=Path, default=C.PROCESSED_DIR / "sft_train.jsonl")
     args = parser.parse_args()
 
-    rows = generate(args.teacher, args.max, args.eval, args.per_scenario)
+    teacher = args.teacher or C.DEFAULT_TEACHER[args.backend]
+    ages = [int(a) for a in args.ages.split(",") if a.strip()]
+    print(f"teacher backend={args.backend} model={teacher} ages={ages}")
+    rows = generate(args.backend, teacher, args.max, args.eval, args.per_scenario, ages)
     n = C.write_jsonl(args.out, rows)
     print(f"OK: {n} SFT turns -> {args.out}")
-    print("주의: 로컬 4B teacher 품질은 제한적. 대량/고품질 생성은 Colab의 강한 teacher 권장.")
     return 0
 
 
