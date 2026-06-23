@@ -60,7 +60,7 @@ def main() -> int:
             bnb_4bit_use_double_quant=mcfg.get("bnb_4bit_use_double_quant", True),
         )
     else:
-        load_kwargs["torch_dtype"] = torch.float16
+        load_kwargs["dtype"] = torch.float16
 
     model = AutoModelForCausalLM.from_pretrained(
         src, revision=None if args.merged else mcfg.get("revision"), **load_kwargs,
