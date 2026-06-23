@@ -16,8 +16,8 @@ optim: "paged_adamw_8bit"
 logging_steps: 10
 save_strategy: "epoch"
 eval_strategy: "no"        # 별도 evaluate.py 로 정량 평가
-bf16: false                 # T4 는 bf16 미지원 → fp16 사용 (L4/A100 이면 bf16:true)
-fp16: true
+bf16: true                  # L4/A100: bf16 학습 (GradScaler 미사용 → unscale 오류 없음). T4면 false+fp16:true
+fp16: false
 
 # LoRA
 lora_rank: 16
