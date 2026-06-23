@@ -6,7 +6,7 @@ model:
 
 data:
   # Upload this archive to Google Drive before running the notebook.
-  archive_path: /content/drive/MyDrive/MazuTalk/stt_data/mazutalk_stt_data.tar
+  archive_path: /content/drive/MyDrive/MazuTalk/stt_data/mazutalk_stt_data_10k.tar
   runtime_root: /content/mazutalk_stt_data
   child_metadata: ai/data/processed/stt/metadata_preprocessed.csv
   asd_metadata: ai/stt/data/processed/asd_metadata.csv
@@ -63,4 +63,3 @@ asd_adaptation:
 prompt:
   text: 사과, 빨갛다, 비가 온다, 꽃이 예쁘다, 옥수수, 아빠, 기린, 일, 이, 삼.
   num_beams: 5
-
