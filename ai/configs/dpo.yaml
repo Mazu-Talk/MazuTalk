@@ -16,7 +16,8 @@ lr_scheduler_type: "cosine"
 optim: "paged_adamw_8bit"
 logging_steps: 10
 save_strategy: "epoch"
-bf16: true
+bf16: false                 # T4 는 bf16 미지원 → fp16 사용 (L4/A100 이면 bf16:true)
+fp16: true
 
 # LoRA (SFT 와 동일 rank 유지)
 lora_rank: 16
