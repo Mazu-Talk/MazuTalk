@@ -25,8 +25,9 @@ def tts(request: TTSRequest, req: Request):
 
     # 요청이 들어온 호스트의 base_url로 동적으로 URL 생성
     base_url = str(req.base_url).rstrip("/")
+    audio_prefix = "/api/v1/audio" if req.url.path.startswith("/api/v1/") else "/audio"
     return {
-        "audio_url": f"{base_url}/audio/{file_id}.wav",
+        "audio_url": f"{base_url}{audio_prefix}/{file_id}.wav",
         "text": request.text
     }
 

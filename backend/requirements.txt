@@ -1,2 +1,5 @@
 fastapi
+faster-whisper
+httpx
+python-multipart
 uvicorn

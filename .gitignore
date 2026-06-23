@@ -12,6 +12,18 @@ __pycache__/
 
 # Logs
 *.log
+backend/session_logs/
 
 # OS
 .DS_Store
+
+# AI Hub STT raw data
+ai/stt/data/raw/
+ai/stt/data/processed/
+ai/data/raw/
+ai/data/processed/stt/*.csv
+ai/data/processed/stt/*.json
+ai/data/processed/stt/*.jsonl
+ai/data/processed/stt/wav/
+ai/data/processed/stt/**/wav/
+ai/stt/results/*.csv
