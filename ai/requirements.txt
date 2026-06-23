@@ -1,1 +1,3 @@
 jsonschema>=4.22.0
+# OpenAI teacher 백엔드(데이터 생성)용. 사용 시 OPENAI_API_KEY 환경변수 필요.
+openai>=1.40.0
