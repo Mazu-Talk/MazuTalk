@@ -52,7 +52,8 @@ def main() -> int:
 
     load_kwargs = dict(device_map="auto", trust_remote_code=mcfg.get("trust_remote_code", True))
     if not args.merged and mcfg.get("load_in_4bit", True):
-        compute_dtype = getattr(torch, mcfg.get("bnb_4bit_compute_dtype", "bfloat16"))
+        # T4 안전: 추론도 float16 기본 (bf16은 T4에서 느리고 일부 op 미지원)
+        compute_dtype = getattr(torch, mcfg.get("bnb_4bit_compute_dtype", "float16"))
         load_kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type=mcfg.get("bnb_4bit_quant_type", "nf4"),
             bnb_4bit_compute_dtype=compute_dtype,
