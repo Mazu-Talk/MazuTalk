@@ -1,0 +1,14 @@
+# GPU 학습용 의존성 (Colab/클라우드 GPU에서 설치).
+# 로컬(4GB VRAM, Python 3.14)에는 설치/실행 불가 — Colab Python 3.10/3.11 권장.
+# 버전은 Colab 환경에 맞춰 조정. trl/transformers/peft 는 호환 조합 확인 필요.
+
+torch
+transformers>=4.44
+peft>=0.12
+trl>=0.10
+bitsandbytes>=0.43
+accelerate>=0.33
+datasets>=2.20
+sentencepiece
+pyyaml
+jsonschema>=4.22.0
