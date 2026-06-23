@@ -1,0 +1,32 @@
+# QLoRA SFT 하이퍼파라미터 (계획서 §Phase 2). 3일 내 시작값.
+# 빠른 탐색은 SFT-A/B/C/D 조합으로 learning_rate·lora_rank·epochs 만 바꿔가며 비교.
+
+output_dir: "ai/models/sft"
+seed: 42
+
+max_seq_length: 2048
+learning_rate: 2.0e-4
+num_train_epochs: 2
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+warmup_ratio: 0.03
+weight_decay: 0.0
+lr_scheduler_type: "cosine"
+optim: "paged_adamw_8bit"
+logging_steps: 10
+save_strategy: "epoch"
+eval_strategy: "no"        # 별도 evaluate.py 로 정량 평가
+bf16: true                  # GPU 미지원 시 fp16: true 로 교체
+
+# LoRA
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
