@@ -90,7 +90,7 @@ def safety_chosen(risk: str, needs_adult: bool) -> dict[str, Any]:
 
 # ----------------------------- 메인 생성 -----------------------------
 
-def generate(teacher: str, base: str, max_pairs: int, per_scenario: int) -> list[dict[str, Any]]:
+def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_scenario: int) -> list[dict[str, Any]]:
     scenarios = C.iter_scenarios()
     system_prompt = C.load_system_prompt(runtime=True)
     rows: list[dict[str, Any]] = []
@@ -117,11 +117,11 @@ def generate(teacher: str, base: str, max_pairs: int, per_scenario: int) -> list
             )
             user_content = json.dumps(runtime, ensure_ascii=False)
             try:
-                raw = C.ollama_chat(
-                    teacher,
+                raw = C.teacher_generate(
+                    teacher_backend, teacher,
                     [{"role": "system", "content": system_prompt},
                      {"role": "user", "content": user_content}],
-                    temperature=0.7, num_predict=1024, think=False,
+                    temperature=0.7, max_new=1024,
                     seed=C.DEFAULT_SEED + len(rows),
                 )
             except Exception as exc:  # noqa: BLE001
@@ -192,15 +192,20 @@ def generate(teacher: str, base: str, max_pairs: int, per_scenario: int) -> list
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="MazuTalk DPO preference 데이터 생성")
-    parser.add_argument("--teacher", default="qwen3.5:4b")
+    parser.add_argument("--teacher-backend", choices=["ollama", "openai"], default="ollama",
+                        help="chosen 생성 teacher 백엔드. openai 는 OPENAI_API_KEY 필요.")
+    parser.add_argument("--teacher", default=None,
+                        help="chosen teacher 모델. 미지정 시 backend 기본값.")
     parser.add_argument("--base", default="qwen3.5:4b",
-                        help="rejected 후보를 뽑을 base 모델(빈 문자열이면 corruption만 사용)")
+                        help="rejected 후보를 뽑을 base 모델(Ollama, 빈 문자열이면 corruption만 사용)")
     parser.add_argument("--per-scenario", type=int, default=3)
     parser.add_argument("--max", type=int, default=600)
     parser.add_argument("--out", type=Path, default=C.PROCESSED_DIR / "dpo_train.jsonl")
     args = parser.parse_args()
 
-    rows = generate(args.teacher, args.base, args.max, args.per_scenario)
+    teacher = args.teacher or C.DEFAULT_TEACHER[args.teacher_backend]
+    print(f"chosen teacher backend={args.teacher_backend} model={teacher}; rejected base={args.base}")
+    rows = generate(args.teacher_backend, teacher, args.base, args.max, args.per_scenario)
     n = C.write_jsonl(args.out, rows)
     n_safety = sum(1 for r in rows if r["metadata"].get("kind") == "safety")
     print(f"OK: {n} DPO pairs -> {args.out} (safety {n_safety})")
