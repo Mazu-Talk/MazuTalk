@@ -96,7 +96,7 @@ def main() -> int:
     dataset = load_dataset("json", data_files=str(args.data), split="train")
     dataset = dataset.map(to_dpo, remove_columns=dataset.column_names)
 
-    dpo_args = DPOConfig(
+    dpo_kwargs = dict(
         output_dir=out_dir,
         seed=tcfg.get("seed", 42),
         beta=tcfg["beta"],
@@ -115,6 +115,13 @@ def main() -> int:
         fp16=tcfg.get("fp16", False),
         report_to="none",
     )
+    # TRL 버전에서 지원하지 않는 인자는 걸러내 'unexpected keyword' 크래시 방지
+    _dpo_fields = getattr(DPOConfig, "__dataclass_fields__", {})
+    if _dpo_fields:
+        for k in [k for k in dpo_kwargs if k not in _dpo_fields]:
+            print(f"[warn] DPOConfig 미지원 인자 무시: {k}")
+            dpo_kwargs.pop(k)
+    dpo_args = DPOConfig(**dpo_kwargs)
 
     # reference = 정책의 학습 전 복사본(어댑터 비활성). LoRA DPO 에서는 ref_model=None
     # 으로 두면 DPOTrainer 가 어댑터를 끈 base 를 reference 로 사용한다.
