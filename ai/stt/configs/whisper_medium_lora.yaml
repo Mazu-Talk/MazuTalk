@@ -63,3 +63,7 @@ asd_adaptation:
 prompt:
   text: 사과, 빨갛다, 비가 온다, 꽃이 예쁘다, 옥수수, 아빠, 기린, 일, 이, 삼.
   num_beams: 5
+
+evaluation:
+  child_test_limit: 300
+  output_dir: /content/drive/MyDrive/MazuTalk/checkpoints/whisper-medium-child-lora/evaluation
