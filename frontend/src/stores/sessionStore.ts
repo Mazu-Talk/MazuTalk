@@ -10,7 +10,11 @@ import type {
 } from '@/types/domain'
 import type { ServerEvent } from '@/types/ws'
 import { createSession, endSession as endSessionApi } from '@/api/client'
-import { connectRolePlay, type RolePlayConnection } from '@/api/websocket'
+import {
+  connectRolePlay,
+  type RolePlayConnection,
+  type UtteranceContent,
+} from '@/api/websocket'
 import { buildReport } from '@/lib/report'
 
 /** 대화 세션의 진행 단계 (아바타/마이크 UI가 이 값을 따른다) */
@@ -37,7 +41,7 @@ interface SessionState {
   // 액션
   startSession: (scenario: Scenario) => Promise<void>
   setListening: (listening: boolean) => void
-  submitChildUtterance: (text: string, responseTimeMs: number) => void
+  submitChildUtterance: (content: UtteranceContent, responseTimeMs: number) => void
   notifySpeakingDone: () => void
   endSession: (status?: 'completed' | 'interrupted') => Promise<void>
   reset: () => void
@@ -68,8 +72,16 @@ export const useSessionStore = create<SessionState>((set, get) => {
         // 백엔드 STT 경로에서 인식 텍스트를 확정. 브라우저 STT 경로에서는 이미 채워져 있다.
         set((state) => {
           const turns = [...state.turns]
-          const lastChild = [...turns].reverse().find((t) => t.speaker === 'child')
-          if (lastChild && !lastChild.text) lastChild.text = event.payload.text
+          let childIndex = -1
+          for (let index = turns.length - 1; index >= 0; index--) {
+            if (turns[index].speaker === 'child') {
+              childIndex = index
+              break
+            }
+          }
+          if (childIndex >= 0 && !turns[childIndex].text) {
+            turns[childIndex] = { ...turns[childIndex], text: event.payload.text }
+          }
           return { turns }
         })
         break
@@ -163,16 +175,16 @@ export const useSessionStore = create<SessionState>((set, get) => {
       }
     },
 
-    submitChildUtterance(text, responseTimeMs) {
+    submitChildUtterance(content, responseTimeMs) {
       const { session, scenario, turns } = get()
       if (!session || !scenario) return
-      const trimmed = text.trim()
+      const text = content.text?.trim() ?? ''
 
       const childTurn: ConversationTurn = {
         turn_id: ++turnCounter,
         session_id: session.session_id,
         speaker: 'child',
-        text: trimmed,
+        text,
         emotion: 'neutral', // ai_response 수신 시 감지값으로 갱신
         response_time_ms: responseTimeMs,
         created_at: new Date().toISOString(),
@@ -183,10 +195,10 @@ export const useSessionStore = create<SessionState>((set, get) => {
 
       connection?.sendUtterance({
         turnId: childTurn.turn_id,
-        text: trimmed,
         responseTimeMs,
         scenario,
         history: nextTurns,
+        content,
       })
     },
 
@@ -211,7 +223,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
         status,
       }
       try {
-        await endSessionApi(session.session_id)
+        await endSessionApi(session.session_id, status)
       } catch {
         /* mock 모드 혹은 백엔드 미가동 시 무시 */
       }

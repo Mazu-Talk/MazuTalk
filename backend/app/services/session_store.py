@@ -5,7 +5,12 @@ import threading
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from app.schemas.speech import LlmModuleResponse, SessionTurn, SpeechAnalysisResponse
+from app.schemas.speech import (
+    LlmModuleResponse,
+    SessionResponse,
+    SessionTurn,
+    SpeechAnalysisResponse,
+)
 
 
 SESSION_DB_PATH = os.getenv("SESSION_DB_PATH", ":memory:")
@@ -15,6 +20,78 @@ _CONNECTION: sqlite3.Connection | None = None
 
 def new_turn_id() -> str:
     return f"turn_{uuid4().hex[:12]}"
+
+
+def create_session(*, scenario_id: str, child_id: str) -> SessionResponse:
+    now = datetime.now(timezone.utc)
+    session = SessionResponse(
+        session_id=f"session_{uuid4().hex[:12]}",
+        child_id=child_id,
+        scenario_id=scenario_id,
+        started_at=now,
+        status="active",
+    )
+    with _LOCK:
+        connection = get_connection()
+        connection.execute(
+            """
+            INSERT INTO sessions (
+                session_id, child_id, scenario_id, status,
+                created_at, updated_at, ended_at
+            ) VALUES (?, ?, ?, ?, ?, ?, NULL)
+            """,
+            (
+                session.session_id,
+                child_id,
+                scenario_id,
+                session.status,
+                now.isoformat(),
+                now.isoformat(),
+            ),
+        )
+        connection.commit()
+    return session
+
+
+def read_session(session_id: str) -> SessionResponse | None:
+    with _LOCK:
+        row = get_connection().execute(
+            """
+            SELECT session_id, child_id, scenario_id, status,
+                   created_at, ended_at
+            FROM sessions WHERE session_id = ?
+            """,
+            (session_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    return session_row_to_model(row)
+
+
+def end_session(session_id: str, status: str) -> SessionResponse | None:
+    now = datetime.now(timezone.utc)
+    with _LOCK:
+        connection = get_connection()
+        cursor = connection.execute(
+            """
+            UPDATE sessions
+            SET status = ?, ended_at = ?, updated_at = ?
+            WHERE session_id = ?
+            """,
+            (status, now.isoformat(), now.isoformat(), session_id),
+        )
+        connection.commit()
+        if cursor.rowcount == 0:
+            return None
+        row = connection.execute(
+            """
+            SELECT session_id, child_id, scenario_id, status,
+                   created_at, ended_at
+            FROM sessions WHERE session_id = ?
+            """,
+            (session_id,),
+        ).fetchone()
+    return session_row_to_model(row)
 
 
 def append_turn(
@@ -44,8 +121,10 @@ def append_turn(
         connection = get_connection()
         connection.execute(
             """
-            INSERT INTO sessions (session_id, created_at, updated_at)
-            VALUES (?, ?, ?)
+            INSERT INTO sessions (
+                session_id, child_id, scenario_id, status, created_at, updated_at
+            )
+            VALUES (?, 'anonymous', 'unknown', 'active', ?, ?)
             ON CONFLICT(session_id) DO UPDATE SET updated_at = excluded.updated_at
             """,
             (session_id, now, now),
@@ -126,11 +205,16 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
         """
         CREATE TABLE IF NOT EXISTS sessions (
             session_id TEXT PRIMARY KEY,
+            child_id TEXT NOT NULL DEFAULT 'anonymous',
+            scenario_id TEXT NOT NULL DEFAULT 'unknown',
+            status TEXT NOT NULL DEFAULT 'active',
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            ended_at TEXT
         )
         """
     )
+    migrate_sessions_schema(connection)
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS turn_logs (
@@ -151,6 +235,22 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
     connection.commit()
 
 
+def migrate_sessions_schema(connection: sqlite3.Connection) -> None:
+    columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(sessions)").fetchall()
+    }
+    additions = {
+        "child_id": "TEXT NOT NULL DEFAULT 'anonymous'",
+        "scenario_id": "TEXT NOT NULL DEFAULT 'unknown'",
+        "status": "TEXT NOT NULL DEFAULT 'active'",
+        "ended_at": "TEXT",
+    }
+    for name, definition in additions.items():
+        if name not in columns:
+            connection.execute(f"ALTER TABLE sessions ADD COLUMN {name} {definition}")
+
+
 def row_to_turn(row: sqlite3.Row) -> SessionTurn:
     return SessionTurn(
         session_id=row["session_id"],
@@ -161,6 +261,21 @@ def row_to_turn(row: sqlite3.Row) -> SessionTurn:
         stt_model=row["stt_model"],
         stt_time_seconds=row["stt_time_seconds"],
         created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
+def session_row_to_model(row: sqlite3.Row) -> SessionResponse:
+    return SessionResponse(
+        session_id=row["session_id"],
+        child_id=row["child_id"],
+        scenario_id=row["scenario_id"],
+        status=row["status"],
+        started_at=datetime.fromisoformat(row["created_at"]),
+        ended_at=(
+            datetime.fromisoformat(row["ended_at"])
+            if row["ended_at"]
+            else None
+        ),
     )
 
 

@@ -17,7 +17,11 @@ export interface EndUtteranceEvent {
   session_id: string
   turn_id: number
   /** 브라우저 STT를 사용할 때는 인식된 텍스트를 직접 전달 (백엔드 STT 우회 경로) */
-  payload?: { text?: string }
+  payload: {
+    text: string
+    duration_seconds?: number
+    response_time_ms?: number
+  }
 }
 
 export type ClientEvent = AudioChunkEvent | EndUtteranceEvent
@@ -56,3 +60,20 @@ export type ServerEvent =
   | ErrorEvent
 
 export type ServerEventType = ServerEvent['type']
+
+export interface SttPipelineResponse {
+  session_id: string
+  turn_id: string
+  transcript: string
+  stt_model: string
+  stt_time_seconds: number
+  llm: {
+    therapist_reply: string
+    next_prompt: string
+    coaching_cues: string[]
+    model_name: string
+  }
+  audio_url: string | null
+  emotion: Emotion
+  avatar_state: AvatarState
+}

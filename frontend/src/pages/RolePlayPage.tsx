@@ -3,7 +3,10 @@ import { useAppStore } from '@/stores/appStore'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useTextToSpeech } from '@/hooks/useTextToSpeech'
 import { Avatar } from '@/features/voice-interaction/Avatar'
-import { MicButton } from '@/features/voice-interaction/MicButton'
+import {
+  MicButton,
+  type MicResult,
+} from '@/features/voice-interaction/MicButton'
 import { ChatBubble } from '@/features/chatbot/ChatBubble'
 import { Button } from '@/components/common/Button'
 import { Modal } from '@/components/common/Modal'
@@ -64,9 +67,16 @@ export function RolePlayPage() {
   }, [turns, showHistory])
 
   const handleResult = useCallback(
-    (text: string) => {
+    (result: MicResult) => {
       const ms = Date.now() - readyAtRef.current
-      submitChildUtterance(text, ms)
+      if (result.kind === 'audio') {
+        submitChildUtterance(
+          { audio: result.audio, durationSeconds: result.durationSeconds },
+          ms,
+        )
+      } else {
+        submitChildUtterance({ text: result.text }, ms)
+      }
     },
     [submitChildUtterance],
   )

@@ -3,3 +3,8 @@ faster-whisper
 httpx
 python-multipart
 uvicorn
+numpy<2
+torch==2.2.1
+torchaudio==2.2.1
+gradio==3.50.2
+melotts @ git+https://github.com/myshell-ai/MeloTTS.git@209145371cff8fc3bd60d7be902ea69cbdb7965a

@@ -26,14 +26,12 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
 
 /** GET /api/scenarios */
 export async function fetchScenarios(): Promise<Scenario[]> {
-  if (USE_MOCK) return SCENARIOS
-  return getJson<Scenario[]>('/scenarios')
+  return SCENARIOS
 }
 
 /** GET /api/scenarios/{id} */
 export async function fetchScenario(id: string): Promise<Scenario | undefined> {
-  if (USE_MOCK) return getScenario(id)
-  return getJson<Scenario>(`/scenarios/${id}`)
+  return getScenario(id)
 }
 
 /** POST /api/sessions */
@@ -57,9 +55,12 @@ export async function createSession(
 }
 
 /** POST /api/sessions/{id}/end */
-export async function endSession(sessionId: string): Promise<void> {
+export async function endSession(
+  sessionId: string,
+  status: 'completed' | 'interrupted' = 'completed',
+): Promise<void> {
   if (USE_MOCK) return
-  await postJson(`/sessions/${sessionId}/end`)
+  await postJson(`/sessions/${sessionId}/end`, { status })
 }
 
 /** GET /api/reports/{session_id} */
