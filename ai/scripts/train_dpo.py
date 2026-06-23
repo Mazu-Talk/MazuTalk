@@ -39,7 +39,7 @@ def main() -> int:
 
     import torch
     from datasets import load_dataset
-    from peft import LoraConfig, PeftModel
+    from peft import PeftModel, prepare_model_for_kbit_training
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from trl import DPOConfig, DPOTrainer
 
@@ -66,11 +66,17 @@ def main() -> int:
     base = AutoModelForCausalLM.from_pretrained(
         mcfg["base_model"], revision=mcfg.get("revision"),
         quantization_config=bnb, device_map="auto",
+        torch_dtype=compute_dtype,
         trust_remote_code=mcfg.get("trust_remote_code", True),
     )
-    # SFT 어댑터를 정책 시작점으로 로드 (학습 가능)
+    base.config.use_cache = False
+    base = prepare_model_for_kbit_training(base)
+    # SFT 어댑터를 정책 시작점으로 로드 (학습 가능). 새 peft_config 를 추가하지 않는다.
     model = PeftModel.from_pretrained(base, str(args.sft_adapter), is_trainable=True)
-    model.config.use_cache = False
+    # 학습 가능한 LoRA 파라미터를 fp32 로 강제 → fp16 GradScaler 호환
+    for p in model.parameters():
+        if p.requires_grad:
+            p.data = p.data.float()
 
     # system+prompt -> 템플릿 적용한 prompt 문자열로 변환
     def to_dpo(example):
@@ -113,16 +119,11 @@ def main() -> int:
     # reference = 정책의 학습 전 복사본(어댑터 비활성). LoRA DPO 에서는 ref_model=None
     # 으로 두면 DPOTrainer 가 어댑터를 끈 base 를 reference 로 사용한다.
     trainer = DPOTrainer(
-        model=model,
-        ref_model=None,
+        model=model,                 # SFT 어댑터가 적용된 학습 가능 모델
+        ref_model=None,              # 어댑터를 끈 base 가 reference 로 사용됨
         args=dpo_args,
         train_dataset=dataset,
         processing_class=tokenizer,
-        peft_config=LoraConfig(
-            r=tcfg["lora_rank"], lora_alpha=tcfg["lora_alpha"],
-            lora_dropout=tcfg["lora_dropout"], bias="none",
-            task_type="CAUSAL_LM", target_modules=tcfg["lora_target_modules"],
-        ),
     )
     trainer.train()
     trainer.save_model(out_dir)

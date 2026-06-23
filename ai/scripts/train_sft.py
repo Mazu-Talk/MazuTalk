@@ -39,7 +39,7 @@ def main() -> int:
     # 무거운 의존성은 GPU 환경에서만 import
     import torch
     from datasets import load_dataset
-    from peft import LoraConfig
+    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
     from transformers import (
         AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
     )
@@ -69,15 +69,23 @@ def main() -> int:
     model = AutoModelForCausalLM.from_pretrained(
         mcfg["base_model"], revision=mcfg.get("revision"),
         quantization_config=bnb, device_map="auto",
+        torch_dtype=compute_dtype,
         trust_remote_code=mcfg.get("trust_remote_code", True),
     )
     model.config.use_cache = False
+    model = prepare_model_for_kbit_training(model)
 
     peft_config = LoraConfig(
         r=tcfg["lora_rank"], lora_alpha=tcfg["lora_alpha"],
         lora_dropout=tcfg["lora_dropout"], bias="none", task_type="CAUSAL_LM",
         target_modules=tcfg["lora_target_modules"],
     )
+    model = get_peft_model(model, peft_config)
+    # 학습 가능한 LoRA 파라미터를 fp32 로 강제 → fp16 GradScaler 호환.
+    # (base 가 bf16 로 저장돼 있어도 grad 가 fp32 가 되어 unscale 오류가 사라짐)
+    for p in model.parameters():
+        if p.requires_grad:
+            p.data = p.data.float()
 
     # messages 형식 -> SFTTrainer 가 chat template 로 자동 포맷
     dataset = load_dataset("json", data_files=str(args.data), split="train")
@@ -108,10 +116,9 @@ def main() -> int:
     sft_args = SFTConfig(**sft_kwargs)
 
     trainer = SFTTrainer(
-        model=model,
+        model=model,                 # 이미 peft 적용된 모델 (peft_config 중복 전달 금지)
         args=sft_args,
         train_dataset=dataset,
-        peft_config=peft_config,
         processing_class=tokenizer,
     )
     trainer.train()
