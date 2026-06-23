@@ -35,6 +35,77 @@ _FOREIGN = re.compile(r"[぀-ヿ一-鿿Ѐ-ӿ]")
 
 DIFFICULTIES = ["low", "medium", "high"]
 
+# 학습용 안전 케이스. eval_set 의 SAFETY_CASES 와 표현이 겹치지 않게 구성(누수 방지).
+# 모델이 위험 신호에서 risk_flag 를 올바로 켜도록 SFT 단계에서부터 학습시킨다.
+SAFETY_TRAIN = [
+    ("self_harm", True, "나 없어졌으면 좋겠어"),
+    ("self_harm", True, "사는 게 너무 싫어, 다 그만하고 싶어"),
+    ("self_harm", True, "나 같은 건 그냥 사라져도 돼"),
+    ("abuse", True, "엄마가 화나면 나를 자꾸 때려요"),
+    ("abuse", True, "삼촌이 자꾸 이상한 데를 만져"),
+    ("abuse", True, "어른이 아무한테도 말하지 말랬어"),
+    ("aggression", True, "쟤 가위로 찌를 거야"),
+    ("aggression", True, "친구 물건 다 부숴버릴래"),
+    ("aggression", True, "발로 차서 울려버릴 거야"),
+    ("medical", True, "넘어져서 팔에서 피가 많이 나"),
+    ("medical", True, "갑자기 가슴이 아프고 숨쉬기 힘들어"),
+    ("medical", True, "머리를 부딪혀서 너무 어지러워"),
+    ("distress", True, "너무 무서워서 자꾸 떨려요"),
+    ("distress", True, "여기 혼자 있는데 무서워"),
+    ("distress", False, "자꾸 눈물이 나고 마음이 아파"),
+    ("privacy", False, "우리 집 주소랑 비밀번호 알려줄까?"),
+]
+
+
+def _safety_response(risk: str, needs_adult: bool) -> dict[str, Any]:
+    """안전 신호 감지 시 SoT(§14) 기준의 모범 응답."""
+    return {
+        "child_message": "지금은 가까운 어른에게 바로 말하자. 선생님이나 보호자에게 같이 가자.",
+        "avatar_expression": "concerned",
+        "tts_style": {"speed": "slow", "tone": "calm", "pause_after_ms": 400},
+        "detected": {
+            "emotion": "anxious", "social_skill": "unknown",
+            "utterance_type": "appropriate_response", "engagement": "low",
+        },
+        "coaching": {
+            "strategy": "close_session", "next_goal": "안전 확보 후 어른과 함께 있기",
+            "difficulty_next": "low", "reason": "위험 신호가 있어 역할극을 멈추고 어른에게 연결",
+        },
+        "report_event": {
+            "turn_success": False, "child_attempt_observed": True,
+            "response_length": "sentence", "conversation_continued": False,
+            "notes_for_guardian": "아동 발화에서 위험 신호가 감지되어 안전 안내로 전환함. 보호자 확인 필요.",
+        },
+        "safety": {"risk_flag": risk, "requires_adult_attention": needs_adult},
+    }
+
+
+def generate_safety(ages: list[int]) -> list[dict[str, Any]]:
+    """안전 케이스 SFT turn 생성(템플릿 응답, teacher 불필요)."""
+    import json
+    scenarios = C.iter_scenarios()
+    base_scn = scenarios[0] if scenarios else {"context": {}, "targetSkills": ["unknown"]}
+    system_prompt = C.load_system_prompt(runtime=True)
+    rows: list[dict[str, Any]] = []
+    for risk, needs_adult, text in SAFETY_TRAIN:
+        for age in ages:
+            runtime = C.scenario_to_runtime(
+                base_scn, target_skill="unknown", difficulty="low",
+                emotion_state="anxious", child_input=text, child_age=age,
+            )
+            assistant = _safety_response(risk, needs_adult)
+            rows.append({
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": json.dumps(runtime, ensure_ascii=False)},
+                    {"role": "assistant", "content": json.dumps(assistant, ensure_ascii=False)},
+                ],
+                "metadata": {
+                    "kind": "safety", "risk_flag": risk, "child_age": age,
+                },
+            })
+    return rows
+
 
 def _is_korean_clean(text: str) -> bool:
     return not _FOREIGN.search(text)
@@ -149,14 +220,30 @@ def main() -> int:
     parser.add_argument("--max", type=int, default=2000)
     parser.add_argument("--eval", type=Path, default=C.PROCESSED_DIR / "eval_set.jsonl")
     parser.add_argument("--out", type=Path, default=C.PROCESSED_DIR / "sft_train.jsonl")
+    parser.add_argument("--no-safety", action="store_true",
+                        help="안전 케이스 SFT turn 생성을 건너뜀")
+    parser.add_argument("--safety-only", action="store_true",
+                        help="안전 케이스만 생성(teacher 미사용). 기존 데이터에 보강할 때 사용")
     args = parser.parse_args()
 
-    teacher = args.teacher or C.DEFAULT_TEACHER[args.backend]
     ages = [int(a) for a in args.ages.split(",") if a.strip()]
+
+    if args.safety_only:
+        rows = generate_safety(ages)
+        n = C.write_jsonl(args.out, rows)
+        print(f"OK: {n} safety SFT turns -> {args.out}")
+        return 0
+
+    teacher = args.teacher or C.DEFAULT_TEACHER[args.backend]
     print(f"teacher backend={args.backend} model={teacher} ages={ages}")
     rows = generate(args.backend, teacher, args.max, args.eval, args.per_scenario, ages)
+    if not args.no_safety:
+        safety_rows = generate_safety(ages)
+        rows += safety_rows
+        print(f"안전 케이스 {len(safety_rows)} turn 추가")
     n = C.write_jsonl(args.out, rows)
-    print(f"OK: {n} SFT turns -> {args.out}")
+    n_safety = sum(1 for r in rows if r["metadata"].get("kind") == "safety")
+    print(f"OK: {n} SFT turns -> {args.out} (안전 {n_safety})")
     return 0
 
 
