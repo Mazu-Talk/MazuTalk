@@ -65,8 +65,8 @@ def main() -> int:
 
     base = AutoModelForCausalLM.from_pretrained(
         mcfg["base_model"], revision=mcfg.get("revision"),
-        quantization_config=bnb, device_map="auto",
-        torch_dtype=compute_dtype,
+        quantization_config=bnb, device_map={"": 0},
+        dtype=compute_dtype,         # base·LoRA 를 의도한 dtype 로 로드 (torch_dtype 은 deprecated)
         trust_remote_code=mcfg.get("trust_remote_code", True),
     )
     base.config.use_cache = False

@@ -68,7 +68,7 @@ def main() -> int:
     )
     base = AutoModelForCausalLM.from_pretrained(
         mcfg["base_model"], revision=mcfg.get("revision"),
-        torch_dtype=torch.float16, device_map="cpu",
+        dtype=torch.float16, device_map="cpu",
         trust_remote_code=mcfg.get("trust_remote_code", True),
     )
     merged = PeftModel.from_pretrained(base, str(args.adapter)).merge_and_unload()
