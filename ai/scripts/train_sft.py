@@ -80,10 +80,9 @@ def main() -> int:
     # messages 형식 -> SFTTrainer 가 chat template 로 자동 포맷
     dataset = load_dataset("json", data_files=str(args.data), split="train")
 
-    sft_args = SFTConfig(
+    sft_kwargs = dict(
         output_dir=out_dir,
         seed=tcfg.get("seed", 42),
-        max_seq_length=tcfg["max_seq_length"],
         learning_rate=float(tcfg["learning_rate"]),
         num_train_epochs=tcfg["num_train_epochs"],
         per_device_train_batch_size=tcfg["per_device_train_batch_size"],
@@ -98,6 +97,13 @@ def main() -> int:
         fp16=tcfg.get("fp16", False),
         report_to="none",
     )
+    # TRL 버전별 시퀀스 길이 파라미터명 호환 (구: max_seq_length / 신: max_length)
+    _sft_fields = getattr(SFTConfig, "__dataclass_fields__", {})
+    if "max_seq_length" in _sft_fields:
+        sft_kwargs["max_seq_length"] = tcfg["max_seq_length"]
+    elif "max_length" in _sft_fields:
+        sft_kwargs["max_length"] = tcfg["max_seq_length"]
+    sft_args = SFTConfig(**sft_kwargs)
 
     trainer = SFTTrainer(
         model=model,
