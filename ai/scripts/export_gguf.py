@@ -15,6 +15,7 @@ GPU 환경에서 병합까지 수행. GGUF 변환은 llama.cpp 가 있으면 자
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import os
 import subprocess
 from pathlib import Path
@@ -48,6 +49,39 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(fh)
 
 
+def disable_incompatible_torchao() -> None:
+    """Avoid PEFT torchao dispatch failures in Colab when old torchao is present."""
+    try:
+        version_text = importlib.metadata.version("torchao")
+    except importlib.metadata.PackageNotFoundError:
+        return
+
+    def version_tuple(text: str) -> tuple[int, ...]:
+        parts: list[int] = []
+        for part in text.split("."):
+            digits = ""
+            for char in part:
+                if not char.isdigit():
+                    break
+                digits += char
+            if digits:
+                parts.append(int(digits))
+        return tuple(parts)
+
+    if version_tuple(version_text) >= (0, 16, 0):
+        return
+
+    print(f"[warn] torchao {version_text} 감지: PEFT 병합에서는 torchao 경로를 비활성화합니다.")
+    try:
+        import peft.import_utils as peft_import_utils
+        import peft.tuners.lora.torchao as peft_lora_torchao
+
+        peft_import_utils.is_torchao_available = lambda: False
+        peft_lora_torchao.is_torchao_available = lambda: False
+    except Exception as exc:  # pragma: no cover - defensive runtime guard
+        print(f"[warn] torchao 비활성화 패치 실패: {exc}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="LoRA 병합 + GGUF + Modelfile")
     parser.add_argument("--model-config", type=Path, default=C.CONFIG_DIR / "model.yaml")
@@ -72,6 +106,8 @@ def main() -> int:
         import torch
         from peft import PeftModel
         from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        disable_incompatible_torchao()
 
         print("[1/4] base + adapter 병합 ...")
         tokenizer = AutoTokenizer.from_pretrained(
