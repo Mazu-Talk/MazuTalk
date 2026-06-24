@@ -18,12 +18,20 @@ function EmotionDetector() {
   const sessionRef = useRef(null);      // ONNX 세션
   const animFrameRef = useRef(null);    // 애니메이션 프레임 ID
   const lastLogTimeRef = useRef(0);     // 마지막 로그 저장 시각
+  const isMountedRef = useRef(true);    // 컴포넌트 마운트 여부 (메모리 누수 방지)
   const [status, setStatus] = useState("초기화 중...");
   const [scores, setScores] = useState([]);
 
   // Zustand에서 함수 가져오기
   const setEmotion = useSessionStore((state) => state.setEmotion);
-  const addEmotionLog = useSessionStore((state) => state.addEmotionLog); // 로그 누적
+  const addEmotionLog = useSessionStore((state) => state.addEmotionLog);
+
+  // 언마운트 시 isMountedRef 해제
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -66,12 +74,12 @@ function EmotionDetector() {
             const confidence = softmaxScores[maxIdx];
 
             // 신뢰도 50% 이상일 때만 감정 업데이트
-            if (confidence > 0.5) {
+            if (confidence > 0.5 && isMountedRef.current) {
               setEmotion(dominantEmotion);
 
-              // 1초마다 감정 로그 누적
+              // 1초마다 감정 로그 누적 (마운트 상태 확인)
               const now = Date.now();
-              if (now - lastLogTimeRef.current >= LOG_INTERVAL_MS) {
+              if (isMountedRef.current && now - lastLogTimeRef.current >= LOG_INTERVAL_MS) {
                 lastLogTimeRef.current = now;
                 addEmotionLog({
                   label: dominantEmotion,
@@ -81,17 +89,26 @@ function EmotionDetector() {
               }
             }
 
-            setScores(softmaxScores.map((s, i) => ({
-              label: CLASSES[i],
-              score: s,
-            })));
+            // 마운트 상태 확인 후 상태 업데이트
+            if (isMountedRef.current) {
+              setScores(softmaxScores.map((s, i) => ({
+                label: CLASSES[i],
+                score: s,
+              })));
+            }
           }
-          animFrameRef.current = requestAnimationFrame(detect);
+
+          // 언마운트 이후에는 루프 중단 (무한 루프 방지)
+          if (isMountedRef.current) {
+            animFrameRef.current = requestAnimationFrame(detect);
+          }
         };
         detect();
 
       } catch (error) {
-        setStatus(`오류: ${error.message}`);
+        if (isMountedRef.current) {
+          setStatus(`오류: ${error.message}`);
+        }
       }
     };
 
