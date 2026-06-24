@@ -22,7 +22,7 @@ from jsonschema import Draft202012Validator
 
 import common as C
 import build_eval_set as bev
-from build_sft_data import validate_assistant
+from build_sft_data import validate_assistant, SAFETY_TRAIN, SAFE_MESSAGES
 
 
 OUTPUT_VALIDATOR = Draft202012Validator(C.build_output_schema())
@@ -166,8 +166,9 @@ def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_
             print(f"[{len(rows)}] pair {scen_id} {emotion}/{utt_type}")
 
     # 2) 안전 pair (chosen=안전 템플릿, rejected=flag 누락)
+    #    입력은 SAFETY_TRAIN(=eval 안전셋과 분리된 표현)을 사용 → eval 누수 방지
     base_scn = scenarios[0] if scenarios else {"context": {}, "targetSkills": ["unknown"]}
-    for k, (risk, needs_adult, text) in enumerate(bev.SAFETY_CASES):
+    for k, (risk, needs_adult, text) in enumerate(SAFETY_TRAIN):
         if len(rows) >= max_pairs:
             break
         runtime = C.scenario_to_runtime(
