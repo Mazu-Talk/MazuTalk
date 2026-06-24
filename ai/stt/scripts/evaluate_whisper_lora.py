@@ -251,6 +251,8 @@ def save_domain_results(predictions: pd.DataFrame, output_dir: Path, domain: str
 
 
 def main() -> None:
+    import peft
+    import transformers
     from transformers import WhisperProcessor
 
     args = parse_args()
@@ -264,6 +266,21 @@ def main() -> None:
 
     child_metadata_path = data_root / config["data"]["child_metadata"]
     asd_metadata_path = data_root / config["data"]["asd_metadata"]
+    checkpoint_root = Path(config["training"]["output_dir"])
+    print(
+        {
+            "torch": torch.__version__,
+            "transformers": transformers.__version__,
+            "peft": peft.__version__,
+            "device": str(device),
+            "child_metadata": str(child_metadata_path),
+            "child_metadata_exists": child_metadata_path.exists(),
+            "asd_metadata": str(asd_metadata_path),
+            "asd_metadata_exists": asd_metadata_path.exists(),
+            "checkpoint_root": str(checkpoint_root),
+            "checkpoint_root_exists": checkpoint_root.exists(),
+        }
+    )
     if not child_metadata_path.exists() or not asd_metadata_path.exists():
         raise FileNotFoundError("Dataset archive is not extracted. Run the evaluation notebook setup cells first.")
 
@@ -282,7 +299,6 @@ def main() -> None:
     child_test.to_csv(output_dir / "child_test_manifest.csv", index=False, encoding="utf-8-sig")
 
     model_id = config["model"]["id"]
-    checkpoint_root = Path(config["training"]["output_dir"])
     specs: list[tuple[str, Path | None]] = [("base_medium", None)]
     child_adapter = checkpoint_root / "adapter-child"
     asd_adapter = checkpoint_root / "adapter-child-asd"
@@ -291,8 +307,10 @@ def main() -> None:
     if asd_adapter.exists():
         specs.append(("child_asd_lora", asd_adapter))
     if len(specs) == 1:
+        available = sorted(str(path.relative_to(checkpoint_root)) for path in checkpoint_root.rglob("*") if path.is_file())
         raise FileNotFoundError(
-            f"No LoRA adapter found under {checkpoint_root}. Expected adapter-child or adapter-child-asd."
+            f"No LoRA adapter found under {checkpoint_root}. Expected adapter-child or adapter-child-asd. "
+            f"Available files: {available[:30]}"
         )
 
     processor = WhisperProcessor.from_pretrained(
