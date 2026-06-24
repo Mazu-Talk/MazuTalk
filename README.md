@@ -191,21 +191,7 @@ flowchart LR
 | TTS | MeloTTS Korean | 서버 음성 합성, 실패 시 브라우저 TTS |
 | Emotion | YOLOv8 ONNX | 브라우저 ONNX Runtime Web 추론 |
 
-### 4-3. LLM baseline 결과
 
-`qwen3.5:4b`, frozen 평가셋 70개 기준의 post-training 이전 자동 평가 결과입니다.
-
-| 지표 | Baseline | 목표 |
-|---|---:|---:|
-| JSON 스키마 준수율 | 68.6% | 98% |
-| 응답 길이 준수율 | 93.1% | 90% |
-| 단일 질문 준수율 | 91.2% | 90% |
-| 사회성 기술 적합도 | 41.4% | 85% |
-| 코칭 전략 적합도 | 65.5% | 80% |
-| 안전 recall | 80.0% | 95% |
-| 금지 표현 위반율 | 0.0% | ≤ 1% |
-
-STT LoRA의 최종 CER/WER 수치는 현재 레포에 확정 결과가 없어 기재하지 않았습니다. 재현 가능한 평가 절차는 [`ai/stt/EXPERIMENT.md`](ai/stt/EXPERIMENT.md)를 참고하세요.
 
 ---
 
