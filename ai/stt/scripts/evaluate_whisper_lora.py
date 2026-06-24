@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", choices=("auto", "cuda", "mps", "cpu"), default="auto")
     parser.add_argument("--dtype", choices=("auto", "float16", "float32"), default="auto")
     parser.add_argument("--skip-asd", action="store_true")
+    parser.add_argument("--resume", action="store_true")
     return parser.parse_args()
 
 
@@ -342,6 +343,14 @@ def main() -> None:
     child_test = build_child_test(child, config, child_limit)
     asd_test = build_asd_test(asd, config)
     child_test.to_csv(output_dir / "child_test_manifest.csv", index=False, encoding="utf-8-sig")
+    partial_path = output_dir / "child_stt_predictions_partial.csv"
+    existing_predictions = pd.DataFrame()
+    if args.resume and partial_path.exists():
+        existing_predictions = pd.read_csv(partial_path)
+        print(
+            "Resume data:",
+            existing_predictions.groupby("model").size().to_dict(),
+        )
 
     model_id = config["model"]["id"]
     specs: list[tuple[str, Path | None]] = [("base_medium", None)]
@@ -376,11 +385,21 @@ def main() -> None:
             config["model"]["task"],
             adapter_path,
         )
-        child_predictions.append(
-            evaluate_frame(model, processor, child_test, model_name, "child", config, device, dtype)
+        expected_sample_ids = set(
+            child_test["resolved_audio_path"].map(lambda path: Path(path).stem)
         )
+        completed = existing_predictions[existing_predictions.get("model", pd.Series(dtype=str)) == model_name]
+        completed = completed[completed.get("sample_id", pd.Series(dtype=str)).isin(expected_sample_ids)]
+        completed = completed.drop_duplicates("sample_id", keep="last")
+        if len(completed) == len(expected_sample_ids) and set(completed["sample_id"]) == expected_sample_ids:
+            print(f"Skipping completed child evaluation: {model_name} ({len(completed)} samples)")
+            child_predictions.append(completed.reset_index(drop=True))
+        else:
+            child_predictions.append(
+                evaluate_frame(model, processor, child_test, model_name, "child", config, device, dtype)
+            )
         pd.concat(child_predictions, ignore_index=True).to_csv(
-            output_dir / "child_stt_predictions_partial.csv",
+            partial_path,
             index=False,
             encoding="utf-8-sig",
         )

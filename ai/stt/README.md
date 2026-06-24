@@ -108,3 +108,5 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 python ai/stt/scripts/evaluate_whisper_lora.py \
 ```
 
 MPS가 정상 동작하면 `--child-limit 300`으로 본 평가를 실행합니다. MPS를 사용할 수 없으면 `--device cpu --dtype float32`로 변경할 수 있지만 Whisper Medium 평가는 오래 걸릴 수 있습니다.
+
+300개 평가가 중단됐고 `child_stt_predictions_partial.csv`가 남아 있다면 동일한 명령에 `--resume`을 추가합니다. 완료된 모델은 건너뛰고 다음 모델부터 이어서 평가합니다.
