@@ -86,12 +86,9 @@ ai/stt/models/whisper-medium-child-lora/
 └── adapter-child-asd/
 ```
 
-Colab 학습 데이터 묶음을 임시 경로에 해제하고 평가 패키지를 설치합니다.
+평가 패키지를 설치합니다. 로컬에 원본 WAV와 10,000개 subset metadata가 있으므로 TAR 파일을 다시 해제할 필요는 없습니다.
 
 ```bash
-mkdir -p /tmp/mazutalk_stt_eval
-tar -xf ~/Downloads/mazutalk_stt_data_10k.tar -C /tmp/mazutalk_stt_eval
-
 source .venv/bin/activate
 pip install -r ai/stt/requirements-training.txt
 ```
@@ -101,7 +98,9 @@ Apple Silicon에서는 먼저 10개 발화로 MPS 실행을 확인합니다.
 ```bash
 PYTORCH_ENABLE_MPS_FALLBACK=1 python ai/stt/scripts/evaluate_whisper_lora.py \
   --config ai/stt/configs/whisper_medium_lora.yaml \
-  --data-root /tmp/mazutalk_stt_eval \
+  --data-root . \
+  --child-metadata ai/stt/data/processed/child_metadata_colab_subset.csv \
+  --asd-metadata ai/stt/data/processed/asd_metadata.csv \
   --checkpoint-root ai/stt/models/whisper-medium-child-lora \
   --output-dir ai/stt/results/lora-evaluation \
   --device mps \

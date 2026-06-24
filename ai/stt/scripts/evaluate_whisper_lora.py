@@ -31,6 +31,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="ai/stt/configs/whisper_medium_lora.yaml")
     parser.add_argument("--data-root")
+    parser.add_argument("--child-metadata")
+    parser.add_argument("--asd-metadata")
     parser.add_argument("--output-dir")
     parser.add_argument("--checkpoint-root")
     parser.add_argument("--child-limit", type=int)
@@ -81,6 +83,13 @@ def normalize_words(text: str) -> str:
 def resolve_audio_path(data_root: Path, value: Any) -> Path:
     path = Path(str(value))
     return path if path.is_absolute() else data_root / path
+
+
+def resolve_metadata_path(override: str | None, data_root: Path, configured: str) -> Path:
+    if override:
+        path = Path(override)
+        return path if path.is_absolute() else Path.cwd() / path
+    return data_root / configured
 
 
 def prepare_frame(frame: pd.DataFrame, data_root: Path, max_audio_seconds: float) -> pd.DataFrame:
@@ -292,8 +301,16 @@ def main() -> None:
     device = select_device(args.device)
     dtype = select_dtype(args.dtype, device)
 
-    child_metadata_path = data_root / config["data"]["child_metadata"]
-    asd_metadata_path = data_root / config["data"]["asd_metadata"]
+    child_metadata_path = resolve_metadata_path(
+        args.child_metadata,
+        data_root,
+        config["data"]["child_metadata"],
+    )
+    asd_metadata_path = resolve_metadata_path(
+        args.asd_metadata,
+        data_root,
+        config["data"]["asd_metadata"],
+    )
     checkpoint_root = Path(args.checkpoint_root or config["training"]["output_dir"])
     print(
         {
