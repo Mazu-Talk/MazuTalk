@@ -82,6 +82,20 @@ def disable_incompatible_torchao() -> None:
         print(f"[warn] torchao 비활성화 패치 실패: {exc}")
 
 
+def find_quantize_binary(llama_cpp: Path) -> Path | None:
+    candidates = [
+        llama_cpp / "llama-quantize",
+        llama_cpp / "build" / "bin" / "llama-quantize",
+        llama_cpp / "build" / "bin" / "Release" / "llama-quantize",
+        llama_cpp / "build" / "bin" / "quantize",
+        llama_cpp / "build" / "bin" / "Release" / "quantize",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="LoRA 병합 + GGUF + Modelfile")
     parser.add_argument("--model-config", type=Path, default=C.CONFIG_DIR / "model.yaml")
@@ -138,7 +152,18 @@ def main() -> int:
             str(args.merged_out), "--outfile", str(f16_path), "--outtype", "f16",
         ], check=True)
         print(f"[3/4] {args.quant} 양자화 ...")
-        quantize_bin = args.llama_cpp / "llama-quantize"
+        quantize_bin = find_quantize_binary(args.llama_cpp)
+        if quantize_bin is None:
+            checked = [
+                args.llama_cpp / "llama-quantize",
+                args.llama_cpp / "build" / "bin" / "llama-quantize",
+            ]
+            raise FileNotFoundError(
+                "llama.cpp 양자화 실행 파일을 찾을 수 없어 Q4 GGUF 를 만들 수 없습니다. "
+                "`cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF && "
+                "cmake --build llama.cpp/build --config Release -j` 를 실행하세요. "
+                f"확인 경로: {', '.join(str(path) for path in checked)}"
+            )
         subprocess.run([str(quantize_bin), str(f16_path), str(quant_path), args.quant], check=True)
     else:
         print("[2-3/4] llama.cpp 경로 미지정 — 아래 명령을 GPU 환경에서 수동 실행:")
