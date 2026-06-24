@@ -13,7 +13,10 @@ app = FastAPI(title="MazuTalk API")
 
 allowed_origins = [
     origin.strip()
-    for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
     if origin.strip()
 ]
 
@@ -41,4 +44,5 @@ app.include_router(tts_router, prefix="/api/v1")
 app.include_router(speech_router, prefix="/api", tags=["compat"])
 app.include_router(dialogue_router, prefix="/api", tags=["compat"])
 app.include_router(stt_router, prefix="/api", tags=["compat"])
+app.include_router(sessions_router, prefix="/api", tags=["compat"])
 app.include_router(tts_router, tags=["compat"])

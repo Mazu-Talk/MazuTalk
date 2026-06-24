@@ -12,7 +12,14 @@ npm run build      # 타입체크 + 프로덕션 빌드
 npm run typecheck  # 타입체크만
 ```
 
-## 백엔드 없이 동작 (기본값)
+## 실제 백엔드 연결 (기본값)
+
+- STT: `MediaRecorder` 오디오를 `/api/v1/stt/pipeline`에 업로드
+- LLM: 외부 서비스가 없으면 백엔드 fallback 사용
+- TTS: 백엔드 `audio_url` 재생, 실패 시 브라우저 TTS 사용
+- 텍스트 대체 입력: `/api/v1/sessions/{session_id}/ws` 사용
+
+## 백엔드 없이 동작
 
 백엔드(FastAPI)가 아직 없어도 전체 흐름을 시연할 수 있도록 **mock 모드**가 기본 활성화되어 있다.
 
@@ -21,17 +28,15 @@ npm run typecheck  # 타입체크만
 - **TTS**: 브라우저 SpeechSynthesis (`useTextToSpeech`).
 - **리포트**: 대화 로그로부터 클라이언트에서 계산(`lib/report.ts`).
 
-실제 백엔드 연결 시 환경변수로 전환한다.
+프론트 UI만 시연할 때 mock 모드로 전환한다.
 
 ```bash
 # .env.local
-VITE_USE_MOCK=false
-VITE_API_BASE=/api
-VITE_WS_BASE=ws://localhost:8000/ws
+VITE_USE_MOCK=true
 ```
 
 `api/client.ts`(REST)와 `api/websocket.ts`(WebSocket)는 ARCHITECTURE.md §8 의 시그니처를 그대로 따르므로,
-백엔드가 준비되면 코드 변경 없이 플래그만 끄면 된다.
+Docker Compose는 기본적으로 실제 백엔드 모드로 실행된다.
 
 ## 구조
 
