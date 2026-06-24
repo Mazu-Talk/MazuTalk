@@ -9,16 +9,29 @@ import useSessionStore from "../../store/sessionStore";
 // 감정 클래스 순서 (Roboflow 학습 시 알파벳 순으로 정렬됨)
 const CLASSES = ["happy", "neutral", "sad", "surprised"];
 
+// 감정 로그 누적 간격 (매 프레임마다 저장하면 너무 많아서 1초마다 저장)
+const LOG_INTERVAL_MS = 1000;
+
 function EmotionDetector() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const sessionRef = useRef(null);   // ONNX 세션
-  const animFrameRef = useRef(null); // 애니메이션 프레임 ID
+  const sessionRef = useRef(null);      // ONNX 세션
+  const animFrameRef = useRef(null);    // 애니메이션 프레임 ID
+  const lastLogTimeRef = useRef(0);     // 마지막 로그 저장 시각
+  const isMountedRef = useRef(true);    // 컴포넌트 마운트 여부 (메모리 누수 방지)
   const [status, setStatus] = useState("초기화 중...");
   const [scores, setScores] = useState([]);
 
-  // Zustand에 감정 저장
+  // Zustand에서 함수 가져오기
   const setEmotion = useSessionStore((state) => state.setEmotion);
+  const addEmotionLog = useSessionStore((state) => state.addEmotionLog);
+
+  // 언마운트 시 isMountedRef 해제
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -61,28 +74,41 @@ function EmotionDetector() {
             const confidence = softmaxScores[maxIdx];
 
             // 신뢰도 50% 이상일 때만 감정 업데이트
-            if (confidence > 0.5) {
-              // YOLOv8 클래스명 → sessionStore 감정명으로 변환
-              const emotionMap = {
-                happy: "happy",
-                sad: "sad",
-                surprised: "surprised",
-                neutral: "neutral",
-              };
-              setEmotion(emotionMap[dominantEmotion]);
+            if (confidence > 0.5 && isMountedRef.current) {
+              setEmotion(dominantEmotion);
+
+              // 1초마다 감정 로그 누적 (마운트 상태 확인)
+              const now = Date.now();
+              if (isMountedRef.current && now - lastLogTimeRef.current >= LOG_INTERVAL_MS) {
+                lastLogTimeRef.current = now;
+                addEmotionLog({
+                  label: dominantEmotion,
+                  confidence: parseFloat(confidence.toFixed(3)),
+                  timestamp: now,
+                });
+              }
             }
 
-            setScores(softmaxScores.map((s, i) => ({
-              label: CLASSES[i],
-              score: s,
-            })));
+            // 마운트 상태 확인 후 상태 업데이트
+            if (isMountedRef.current) {
+              setScores(softmaxScores.map((s, i) => ({
+                label: CLASSES[i],
+                score: s,
+              })));
+            }
           }
-          animFrameRef.current = requestAnimationFrame(detect);
+
+          // 언마운트 이후에는 루프 중단 (무한 루프 방지)
+          if (isMountedRef.current) {
+            animFrameRef.current = requestAnimationFrame(detect);
+          }
         };
         detect();
 
       } catch (error) {
-        setStatus(`오류: ${error.message}`);
+        if (isMountedRef.current) {
+          setStatus(`오류: ${error.message}`);
+        }
       }
     };
 
@@ -102,8 +128,8 @@ function EmotionDetector() {
     const float32 = new Float32Array(3 * width * height);
 
     for (let i = 0; i < width * height; i++) {
-      float32[i] = data[i * 4] / 255.0;                      // R
-      float32[i + width * height] = data[i * 4 + 1] / 255.0; // G
+      float32[i] = data[i * 4] / 255.0;                          // R
+      float32[i + width * height] = data[i * 4 + 1] / 255.0;     // G
       float32[i + 2 * width * height] = data[i * 4 + 2] / 255.0; // B
     }
 
