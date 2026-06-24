@@ -35,10 +35,14 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=C.PROCESSED_DIR / "sft_outputs.jsonl")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--num-predict", type=int, default=1024)
+    parser.add_argument("--seed", type=int, default=C.DEFAULT_SEED,
+                        help="샘플링 재현성을 위한 기본 seed. 케이스별로 seed+index 를 사용.")
     args = parser.parse_args()
 
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, set_seed
+
+    set_seed(args.seed)
 
     mcfg = load_yaml(args.model_config)
     src = str(args.merged) if args.merged else mcfg["base_model"]
@@ -95,14 +99,17 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     n = 0
     with args.out.open("w", encoding="utf-8") as fh:
-        for case in cases:
+        for case_idx, case in enumerate(cases):
             user_content = json.dumps(case["input"], ensure_ascii=False)
             inputs = build_inputs(user_content)
+            generator = torch.Generator(device=model.device)
+            generator.manual_seed(args.seed + case_idx)
             t0 = time.perf_counter()
             with torch.no_grad():
                 gen = model.generate(
                     **inputs, max_new_tokens=args.num_predict,
                     do_sample=True, temperature=0.7, top_p=0.8, top_k=20,
+                    generator=generator,
                     pad_token_id=tokenizer.pad_token_id,
                 )
             elapsed_ms = (time.perf_counter() - t0) * 1000.0
