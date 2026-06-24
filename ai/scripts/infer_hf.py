@@ -102,14 +102,12 @@ def main() -> int:
         for case_idx, case in enumerate(cases):
             user_content = json.dumps(case["input"], ensure_ascii=False)
             inputs = build_inputs(user_content)
-            generator = torch.Generator(device=model.device)
-            generator.manual_seed(args.seed + case_idx)
+            set_seed(args.seed + case_idx)
             t0 = time.perf_counter()
             with torch.no_grad():
                 gen = model.generate(
                     **inputs, max_new_tokens=args.num_predict,
                     do_sample=True, temperature=0.7, top_p=0.8, top_k=20,
-                    generator=generator,
                     pad_token_id=tokenizer.pad_token_id,
                 )
             elapsed_ms = (time.perf_counter() - t0) * 1000.0
