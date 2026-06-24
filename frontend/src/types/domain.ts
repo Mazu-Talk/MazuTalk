@@ -87,6 +87,13 @@ export interface EmotionPoint {
   emotion: Emotion
 }
 
+/** 시선 요약 — MediaPipe 시선 추적 결과 */
+export interface GazeSummary {
+  center: number  // 정면 비율 (%)
+  left: number    // 왼쪽 비율 (%)
+  right: number   // 오른쪽 비율 (%)
+}
+
 /** 학습 리포트 — ARCHITECTURE §7.4 Report + FD-07 */
 export interface Report {
   report_id: string
@@ -100,4 +107,5 @@ export interface Report {
   participation_score: number
   completion_status: 'completed' | 'interrupted'
   created_at: string
+  gaze_summary?: GazeSummary  // 시선 집중도 (선택적, MediaPipe 시선 추적 결과)
 }

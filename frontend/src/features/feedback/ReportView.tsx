@@ -65,6 +65,16 @@ export function ReportView({ report, scenario }: ReportViewProps) {
             unit="글자"
             emoji="✍️"
           />
+          {/* 시선 집중도 — MediaPipe 시선 추적 결과 (선택적) */}
+          {report.gaze_summary && (
+            <StatBar
+              label="정면 집중도"
+              value={report.gaze_summary.center}
+              max={100}
+              unit="%"
+              emoji="👀"
+            />
+          )}
         </Card>
       </div>
 
