@@ -29,6 +29,27 @@ OUTPUT_VALIDATOR = Draft202012Validator(C.build_output_schema())
 DIFFICULTIES = ["low", "medium", "high"]
 
 
+# ----------------------------- eval 누수 방지 -----------------------------
+
+def _eval_combo_keys(eval_path: Path) -> set[tuple]:
+    keys: set[tuple] = set()
+    if not eval_path.exists():
+        return keys
+    for r in C.read_jsonl(eval_path):
+        exp = r.get("expected", {})
+        keys.add((r.get("scenario_id"), exp.get("emotion_state"), exp.get("utterance_type")))
+    return keys
+
+
+def _eval_prompt_keys(eval_path: Path) -> set[str]:
+    if not eval_path.exists():
+        return set()
+    return {
+        json.dumps(r["input"], ensure_ascii=False, sort_keys=True)
+        for r in C.read_jsonl(eval_path)
+    }
+
+
 # ----------------------------- rejected 생성기 -----------------------------
 
 def rej_too_long(chosen: dict[str, Any]) -> str:
@@ -90,11 +111,22 @@ def safety_chosen(risk: str, needs_adult: bool) -> dict[str, Any]:
 
 # ----------------------------- 메인 생성 -----------------------------
 
-def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_scenario: int) -> list[dict[str, Any]]:
+def generate(
+    teacher_backend: str,
+    teacher: str,
+    base: str,
+    max_roleplay: int,
+    max_safety: int,
+    per_scenario: int,
+    eval_path: Path,
+) -> list[dict[str, Any]]:
     scenarios = C.iter_scenarios()
     system_prompt = C.load_system_prompt(runtime=True)
+    exclude = _eval_combo_keys(eval_path)
+    eval_prompts = _eval_prompt_keys(eval_path)
     rows: list[dict[str, Any]] = []
     rej_i = 0
+    n_roleplay = 0
 
     # 1) 역할극 pair
     for idx, scenario in enumerate(scenarios):
@@ -106,15 +138,20 @@ def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_
         scen_id = scenario.get("scenarioId")
         made = 0
         for j in range(len(bev.ROLEPLAY_CASES)):
-            if made >= per_scenario or len(rows) >= max_pairs:
+            if made >= per_scenario or n_roleplay >= max_roleplay:
                 break
             emotion, utt_type, feats, strat = bev.ROLEPLAY_CASES[j]
+            if (scen_id, emotion, utt_type) in exclude:
+                continue
             difficulty = DIFFICULTIES[(idx + j) % len(DIFFICULTIES)]
             runtime = C.scenario_to_runtime(
                 scenario, target_skill=target_skill, difficulty=difficulty,
                 emotion_state=emotion, child_input=bev._child_input(step, strat),
                 observed_features=feats,
             )
+            prompt_key = json.dumps(runtime, ensure_ascii=False, sort_keys=True)
+            if prompt_key in eval_prompts:
+                continue
             user_content = json.dumps(runtime, ensure_ascii=False)
             try:
                 raw = C.teacher_generate(
@@ -163,13 +200,15 @@ def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_
                 },
             })
             made += 1
+            n_roleplay += 1
             print(f"[{len(rows)}] pair {scen_id} {emotion}/{utt_type}")
 
     # 2) 안전 pair (chosen=안전 템플릿, rejected=flag 누락)
     #    입력은 SAFETY_TRAIN(=eval 안전셋과 분리된 표현)을 사용 → eval 누수 방지
     base_scn = scenarios[0] if scenarios else {"context": {}, "targetSkills": ["unknown"]}
+    n_safety = 0
     for k, (risk, needs_adult, text) in enumerate(SAFETY_TRAIN):
-        if len(rows) >= max_pairs:
+        if n_safety >= max_safety:
             break
         runtime = C.scenario_to_runtime(
             base_scn, target_skill="unknown", difficulty="low",
@@ -186,6 +225,7 @@ def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_
                 "preference_reason": "chosen은 위험을 flag 하고 어른 연결; rejected는 안전 flag 누락",
             },
         })
+        n_safety += 1
         print(f"[{len(rows)}] safety pair risk={risk}")
 
     return rows
@@ -200,13 +240,25 @@ def main() -> int:
     parser.add_argument("--base", default="qwen3.5:4b",
                         help="rejected 후보를 뽑을 base 모델(Ollama, 빈 문자열이면 corruption만 사용)")
     parser.add_argument("--per-scenario", type=int, default=3)
-    parser.add_argument("--max", type=int, default=600)
+    parser.add_argument("--max", type=int, default=600,
+                        help="하위 호환용 roleplay pair 최대 개수. --max-roleplay 미지정 시 사용.")
+    parser.add_argument("--max-roleplay", type=int, default=None,
+                        help="roleplay DPO pair 최대 개수.")
+    parser.add_argument("--max-safety", type=int, default=None,
+                        help="safety DPO pair 최대 개수. 미지정 시 SAFETY_TRAIN 전체.")
+    parser.add_argument("--eval", type=Path, default=C.PROCESSED_DIR / "eval_set.jsonl")
     parser.add_argument("--out", type=Path, default=C.PROCESSED_DIR / "dpo_train.jsonl")
     args = parser.parse_args()
 
     teacher = args.teacher or C.DEFAULT_TEACHER[args.teacher_backend]
+    max_roleplay = args.max_roleplay if args.max_roleplay is not None else args.max
+    max_safety = args.max_safety if args.max_safety is not None else len(SAFETY_TRAIN)
     print(f"chosen teacher backend={args.teacher_backend} model={teacher}; rejected base={args.base}")
-    rows = generate(args.teacher_backend, teacher, args.base, args.max, args.per_scenario)
+    print(f"budget roleplay={max_roleplay} safety={max_safety}")
+    rows = generate(
+        args.teacher_backend, teacher, args.base,
+        max_roleplay, max_safety, args.per_scenario, args.eval,
+    )
     n = C.write_jsonl(args.out, rows)
     n_safety = sum(1 for r in rows if r["metadata"].get("kind") == "safety")
     print(f"OK: {n} DPO pairs -> {args.out} (safety {n_safety})")
