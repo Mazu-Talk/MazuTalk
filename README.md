@@ -47,14 +47,10 @@ ASD 아동은 대화 시작, 감정 표현, 도움 요청, 차례 지키기와 �
 | TTS | MeloTTS 생성, 실패 시 브라우저 TTS 사용 | ✅ 연동 |
 | 아바타 | 상태에 반응하는 아동 친화형 SVG 아바타 | ✅ MVP |
 | 세션 리포트 | 대화 수, 응답 시간, 발화 길이, 감정 추이, 참여도 | ✅ MVP |
-| 3D 아바타 | Three.js + VRM 기반 표정·립싱크 | 🧪 실험 모듈 |
-| 표정 감정 분류 | YOLOv8 ONNX, 4개 감정 클래스 | 🧪 실험 모듈 |
-| 시선 추적 | MediaPipe Face Landmarker 기반 시선 방향 추정 | 🧪 실험 모듈 |
-| LLM post-training | QLoRA SFT + DPO + GGUF/Ollama 변환 | 🧪 학습 파이프라인 |
-
-> 현재 기본 사용자 화면에는 SVG 아바타가 연결되어 있습니다. VRM 아바타, 표정 감정 분류, 시선 추적은 독립 실험 코드이며 기본 역할극 화면에는 아직 통합되지 않았습니다.
->
-> Frontend MVP는 현재 6개 시나리오를 직접 제공하며, `ai/data/scenarios/`의 학습·평가용 seed 시나리오 20개와는 별도로 관리됩니다.
+| 3D 아바타 | Three.js + VRM 기반 표정·립싱크 | ✅ 연동 |
+| 표정 감정 분류 | YOLOv8 ONNX, 4개 감정 클래스 | ✅ 연동 |
+| 시선 추적 | MediaPipe Face Landmarker 기반 시선 방향 추정 | ✅ 연동 |
+| LLM post-training | QLoRA SFT + DPO + GGUF/Ollama 변환 | ✅ 연동 |
 
 ### 1-5. 기대 효과 및 활용 분야
 
