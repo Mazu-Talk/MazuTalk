@@ -15,12 +15,17 @@ GPU 환경에서 병합까지 수행. GGUF 변환은 llama.cpp 가 있으면 자
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
 import yaml
 
 import common as C
+
+
+os.environ.setdefault("USE_TF", "0")
+os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
 
 
 MODELFILE_TEMPLATE = '''FROM ./{gguf_name}
@@ -52,30 +57,37 @@ def main() -> int:
     parser.add_argument("--llama-cpp", type=Path, default=None, help="llama.cpp 저장소 경로")
     parser.add_argument("--quant", default="Q4_K_M")
     parser.add_argument("--model-name", default="mazutalk-qwen-roleplay")
+    parser.add_argument("--skip-merge", action="store_true",
+                        help="이미 생성된 merged-out 을 사용하고 LoRA 병합을 건너뜀")
     args = parser.parse_args()
 
     mcfg = load_yaml(args.model_config)
 
     # 1) 병합
-    import torch
-    from peft import PeftModel
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    if args.skip_merge:
+        if not args.merged_out.exists():
+            raise FileNotFoundError(f"--skip-merge 사용 시 merged-out 이 필요합니다: {args.merged_out}")
+        print(f"[1/4] base + adapter 병합 건너뜀 -> {args.merged_out}")
+    else:
+        import torch
+        from peft import PeftModel
+        from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    print("[1/4] base + adapter 병합 ...")
-    tokenizer = AutoTokenizer.from_pretrained(
-        mcfg["base_model"], revision=mcfg.get("revision"),
-        trust_remote_code=mcfg.get("trust_remote_code", True),
-    )
-    base = AutoModelForCausalLM.from_pretrained(
-        mcfg["base_model"], revision=mcfg.get("revision"),
-        dtype=torch.float16, device_map="cpu",
-        trust_remote_code=mcfg.get("trust_remote_code", True),
-    )
-    merged = PeftModel.from_pretrained(base, str(args.adapter)).merge_and_unload()
-    args.merged_out.mkdir(parents=True, exist_ok=True)
-    merged.save_pretrained(str(args.merged_out))
-    tokenizer.save_pretrained(str(args.merged_out))
-    print(f"   병합 모델 저장 -> {args.merged_out}")
+        print("[1/4] base + adapter 병합 ...")
+        tokenizer = AutoTokenizer.from_pretrained(
+            mcfg["base_model"], revision=mcfg.get("revision"),
+            trust_remote_code=mcfg.get("trust_remote_code", True),
+        )
+        base = AutoModelForCausalLM.from_pretrained(
+            mcfg["base_model"], revision=mcfg.get("revision"),
+            dtype=torch.float16, device_map="cpu",
+            trust_remote_code=mcfg.get("trust_remote_code", True),
+        )
+        merged = PeftModel.from_pretrained(base, str(args.adapter)).merge_and_unload()
+        args.merged_out.mkdir(parents=True, exist_ok=True)
+        merged.save_pretrained(str(args.merged_out))
+        tokenizer.save_pretrained(str(args.merged_out))
+        print(f"   병합 모델 저장 -> {args.merged_out}")
 
     # 2) GGUF 변환
     args.gguf_out.mkdir(parents=True, exist_ok=True)
