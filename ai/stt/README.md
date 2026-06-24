@@ -75,3 +75,37 @@ python ai/stt/scripts/compare_stt.py \
   --faster-whisper ai/stt/results/faster_whisper_result.csv \
   --output ai/stt/results/stt_compare_result.csv
 ```
+
+## Local LoRA Evaluation
+
+Google Drive에서 학습된 adapter 폴더를 다음 위치로 내려받습니다.
+
+```text
+ai/stt/models/whisper-medium-child-lora/
+├── adapter-child/
+└── adapter-child-asd/
+```
+
+Colab 학습 데이터 묶음을 임시 경로에 해제하고 평가 패키지를 설치합니다.
+
+```bash
+mkdir -p /tmp/mazutalk_stt_eval
+tar -xf ~/Downloads/mazutalk_stt_data_10k.tar -C /tmp/mazutalk_stt_eval
+
+source .venv/bin/activate
+pip install -r ai/stt/requirements-training.txt
+```
+
+Apple Silicon에서는 먼저 10개 발화로 MPS 실행을 확인합니다.
+
+```bash
+PYTORCH_ENABLE_MPS_FALLBACK=1 python ai/stt/scripts/evaluate_whisper_lora.py \
+  --config ai/stt/configs/whisper_medium_lora.yaml \
+  --data-root /tmp/mazutalk_stt_eval \
+  --checkpoint-root ai/stt/models/whisper-medium-child-lora \
+  --output-dir ai/stt/results/lora-evaluation \
+  --device mps \
+  --child-limit 10
+```
+
+MPS가 정상 동작하면 `--child-limit 300`으로 본 평가를 실행합니다. MPS를 사용할 수 없으면 `--device cpu --dtype float32`로 변경할 수 있지만 Whisper Medium 평가는 오래 걸릴 수 있습니다.

@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import argparse
 import gc
+import os
 import re
 import time
 import unicodedata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 import jiwer
 import librosa
@@ -29,10 +32,34 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", default="ai/stt/configs/whisper_medium_lora.yaml")
     parser.add_argument("--data-root")
     parser.add_argument("--output-dir")
+    parser.add_argument("--checkpoint-root")
     parser.add_argument("--child-limit", type=int)
-    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--device", choices=("auto", "cuda", "mps", "cpu"), default="auto")
+    parser.add_argument("--dtype", choices=("auto", "float16", "float32"), default="auto")
     parser.add_argument("--skip-asd", action="store_true")
     return parser.parse_args()
+
+
+def select_device(requested: str) -> torch.device:
+    if requested == "auto":
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+        return torch.device("cpu")
+    if requested == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA is not available. Use --device mps or --device cpu.")
+    if requested == "mps" and not torch.backends.mps.is_available():
+        raise RuntimeError("MPS is not available in this Python environment. Use --device cpu.")
+    return torch.device(requested)
+
+
+def select_dtype(requested: str, device: torch.device) -> torch.dtype:
+    if requested == "float16":
+        return torch.float16
+    if requested == "float32":
+        return torch.float32
+    return torch.float16 if device.type in {"cuda", "mps"} else torch.float32
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
@@ -251,22 +278,23 @@ def save_domain_results(predictions: pd.DataFrame, output_dir: Path, domain: str
 
 
 def main() -> None:
+    args = parse_args()
+
     import peft
     import transformers
     from transformers import WhisperProcessor
 
-    args = parse_args()
     config = load_config(args.config)
     data_root = Path(args.data_root or config["data"]["runtime_root"])
     output_dir = Path(args.output_dir or config["evaluation"]["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
     child_limit = int(args.child_limit or config["evaluation"]["child_test_limit"])
-    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
-    dtype = torch.float16 if device.type == "cuda" else torch.float32
+    device = select_device(args.device)
+    dtype = select_dtype(args.dtype, device)
 
     child_metadata_path = data_root / config["data"]["child_metadata"]
     asd_metadata_path = data_root / config["data"]["asd_metadata"]
-    checkpoint_root = Path(config["training"]["output_dir"])
+    checkpoint_root = Path(args.checkpoint_root or config["training"]["output_dir"])
     print(
         {
             "torch": torch.__version__,
@@ -361,6 +389,8 @@ def main() -> None:
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        if device.type == "mps":
+            torch.mps.empty_cache()
 
     save_domain_results(pd.concat(child_predictions, ignore_index=True), output_dir, "child")
     if asd_predictions:

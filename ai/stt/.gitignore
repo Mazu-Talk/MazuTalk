@@ -2,6 +2,7 @@
 data/raw/**
 data/processed/**
 results/**
+models/**
 
 !data/
 !data/raw/
@@ -21,3 +22,5 @@ results/**
 !results/faster-whisper/.gitkeep
 !results/metrics/
 !results/metrics/.gitkeep
+!models/
+!models/.gitkeep
