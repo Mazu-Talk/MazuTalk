@@ -89,7 +89,7 @@ ASD 아동은 대화 시작, 감정 표현, 도움 요청, 차례 지키기와 �
 |:---:|---|
 | [molcham](https://github.com/molcham) | Backend, STT 전처리·LoRA 학습, 전체 AI 파이프라인 연동 |
 | [iaminsam](https://github.com/iaminsam) | LLM 프롬프트·시나리오, QLoRA SFT/DPO, Frontend MVP |
-| SeojinKim | TTS, VRM 아바타, MediaPipe 시선 추적, YOLOv8 감정 분류 |
+| [SeojinKim](https://github.com/papinose06-lab) | TTS, VRM 아바타, MediaPipe 시선 추적, YOLOv8 감정 분류 |
 
 ---
 
