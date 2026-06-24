@@ -101,25 +101,32 @@ def main() -> int:
     with args.out.open("w", encoding="utf-8") as fh:
         for case_idx, case in enumerate(cases):
             user_content = json.dumps(case["input"], ensure_ascii=False)
-            inputs = build_inputs(user_content)
             set_seed(args.seed + case_idx)
             t0 = time.perf_counter()
-            with torch.no_grad():
-                gen = model.generate(
-                    **inputs, max_new_tokens=args.num_predict,
-                    do_sample=True, temperature=0.7, top_p=0.8, top_k=20,
-                    pad_token_id=tokenizer.pad_token_id,
-                )
+            raw = ""
+            error = None
+            try:
+                inputs = build_inputs(user_content)
+                with torch.no_grad():
+                    gen = model.generate(
+                        **inputs, max_new_tokens=args.num_predict,
+                        do_sample=True, temperature=0.7, top_p=0.8, top_k=20,
+                        pad_token_id=tokenizer.pad_token_id,
+                    )
+                out_ids = gen[0][inputs["input_ids"].shape[1]:]
+                raw = tokenizer.decode(out_ids, skip_special_tokens=True)
+            except Exception as exc:  # noqa: BLE001 - 케이스별 실패를 기록하고 계속
+                error = str(exc)
             elapsed_ms = (time.perf_counter() - t0) * 1000.0
-            out_ids = gen[0][inputs["input_ids"].shape[1]:]
-            raw = tokenizer.decode(out_ids, skip_special_tokens=True)
             fh.write(json.dumps({
                 "case_id": case["case_id"], "kind": case["kind"],
                 "expected": case["expected"], "raw_output": raw,
-                "error": None, "elapsed_ms": round(elapsed_ms, 1),
+                "error": error, "elapsed_ms": round(elapsed_ms, 1),
             }, ensure_ascii=False) + "\n")
+            fh.flush()
             n += 1
-            print(f"[{n}/{len(cases)}] {case['case_id']} {elapsed_ms:.0f}ms")
+            status = "ERR" if error else "ok "
+            print(f"[{n}/{len(cases)}] {status} {case['case_id']} {elapsed_ms:.0f}ms")
 
     print(f"OK: {n} outputs -> {args.out}")
     return 0

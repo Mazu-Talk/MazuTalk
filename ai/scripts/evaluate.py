@@ -49,11 +49,14 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     n_skill_ok = n_skill_total = 0
     n_strat_ok = n_strat_total = 0
     n_forbidden = 0
+    n_errors = 0
     latencies: list[float] = []
     per_case: list[dict[str, Any]] = []
     per_case_by_id: dict[str, dict[str, Any]] = {}
 
     for r in rows:
+        if r.get("error"):
+            n_errors += 1
         parsed = C.extract_json(r.get("raw_output", "") or "")
         schema_ok = False
         if parsed is not None:
@@ -168,6 +171,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     summary = {
         "total": total,
+        "error_count": n_errors,
         "json_parse_rate": _pct(n_parse, total),
         "json_schema_pass_rate": _pct(n_schema, total),
         "length_pass_rate": _pct(n_len_ok, n_len_total),
@@ -193,7 +197,13 @@ def main() -> int:
     parser.add_argument("--csv", type=Path, default=C.PROCESSED_DIR / "baseline_eval.csv")
     args = parser.parse_args()
 
+    if not args.inp.exists():
+        print(f"ERROR: 평가 입력 파일이 없습니다: {args.inp}")
+        return 1
     rows = C.read_jsonl(args.inp)
+    if not rows:
+        print(f"ERROR: 평가 입력이 비어 있습니다: {args.inp}")
+        return 1
     result = evaluate(rows)
     summary = result["summary"]
 
@@ -219,6 +229,7 @@ def main() -> int:
     print("=" * 48)
     labels = {
         "json_parse_rate": "JSON 파싱 성공률",
+        "error_count": "추론 오류 건수",
         "json_schema_pass_rate": "JSON 스키마 준수율 (목표 98%)",
         "length_pass_rate": "응답 길이 준수율 (목표 90%)",
         "single_question_rate": "단일 질문 준수율 (목표 90%)",
