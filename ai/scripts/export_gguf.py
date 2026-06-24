@@ -82,6 +82,20 @@ def disable_incompatible_torchao() -> None:
         print(f"[warn] torchao 비활성화 패치 실패: {exc}")
 
 
+def find_quantize_binary(llama_cpp: Path) -> Path | None:
+    candidates = [
+        llama_cpp / "llama-quantize",
+        llama_cpp / "build" / "bin" / "llama-quantize",
+        llama_cpp / "build" / "bin" / "Release" / "llama-quantize",
+        llama_cpp / "build" / "bin" / "quantize",
+        llama_cpp / "build" / "bin" / "Release" / "quantize",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="LoRA 병합 + GGUF + Modelfile")
     parser.add_argument("--model-config", type=Path, default=C.CONFIG_DIR / "model.yaml")
@@ -130,6 +144,7 @@ def main() -> int:
     f16_path = args.gguf_out / "model-f16.gguf"
     quant_name = f"model-{args.quant}.gguf"
     quant_path = args.gguf_out / quant_name
+    final_gguf_name = quant_name
 
     if args.llama_cpp and args.llama_cpp.exists():
         print("[2/4] GGUF(f16) 변환 ...")
@@ -138,8 +153,21 @@ def main() -> int:
             str(args.merged_out), "--outfile", str(f16_path), "--outtype", "f16",
         ], check=True)
         print(f"[3/4] {args.quant} 양자화 ...")
-        quantize_bin = args.llama_cpp / "llama-quantize"
-        subprocess.run([str(quantize_bin), str(f16_path), str(quant_path), args.quant], check=True)
+        quantize_bin = find_quantize_binary(args.llama_cpp)
+        if quantize_bin is None:
+            checked = [
+                args.llama_cpp / "llama-quantize",
+                args.llama_cpp / "build" / "bin" / "llama-quantize",
+            ]
+            print(
+                "[warn] llama.cpp 양자화 실행 파일을 찾을 수 없어 f16 GGUF 를 최종 산출물로 사용합니다. "
+                "Q4 양자화가 필요하면 `cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF && "
+                "cmake --build llama.cpp/build --config Release -j` 를 실행하세요. "
+                f"확인 경로: {', '.join(str(path) for path in checked)}"
+            )
+            final_gguf_name = f16_path.name
+        else:
+            subprocess.run([str(quantize_bin), str(f16_path), str(quant_path), args.quant], check=True)
     else:
         print("[2-3/4] llama.cpp 경로 미지정 — 아래 명령을 GPU 환경에서 수동 실행:")
         print(f"  python <llama.cpp>/convert_hf_to_gguf.py {args.merged_out} "
@@ -149,7 +177,7 @@ def main() -> int:
     # 4) Modelfile
     print("[4/4] Ollama Modelfile 작성 ...")
     system_prompt = C.load_system_prompt(runtime=True).replace('"""', "'''")
-    modelfile = MODELFILE_TEMPLATE.format(gguf_name=quant_name, system=system_prompt)
+    modelfile = MODELFILE_TEMPLATE.format(gguf_name=final_gguf_name, system=system_prompt)
     mf_path = args.gguf_out / "Modelfile"
     mf_path.write_text(modelfile, encoding="utf-8")
     print(f"   Modelfile -> {mf_path}")
