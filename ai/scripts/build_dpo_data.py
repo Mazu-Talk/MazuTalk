@@ -29,6 +29,27 @@ OUTPUT_VALIDATOR = Draft202012Validator(C.build_output_schema())
 DIFFICULTIES = ["low", "medium", "high"]
 
 
+# ----------------------------- eval 누수 방지 -----------------------------
+
+def _eval_combo_keys(eval_path: Path) -> set[tuple]:
+    keys: set[tuple] = set()
+    if not eval_path.exists():
+        return keys
+    for r in C.read_jsonl(eval_path):
+        exp = r.get("expected", {})
+        keys.add((r.get("scenario_id"), exp.get("emotion_state"), exp.get("utterance_type")))
+    return keys
+
+
+def _eval_prompt_keys(eval_path: Path) -> set[str]:
+    if not eval_path.exists():
+        return set()
+    return {
+        json.dumps(r["input"], ensure_ascii=False, sort_keys=True)
+        for r in C.read_jsonl(eval_path)
+    }
+
+
 # ----------------------------- rejected 생성기 -----------------------------
 
 def rej_too_long(chosen: dict[str, Any]) -> str:
@@ -90,9 +111,18 @@ def safety_chosen(risk: str, needs_adult: bool) -> dict[str, Any]:
 
 # ----------------------------- 메인 생성 -----------------------------
 
-def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_scenario: int) -> list[dict[str, Any]]:
+def generate(
+    teacher_backend: str,
+    teacher: str,
+    base: str,
+    max_pairs: int,
+    per_scenario: int,
+    eval_path: Path,
+) -> list[dict[str, Any]]:
     scenarios = C.iter_scenarios()
     system_prompt = C.load_system_prompt(runtime=True)
+    exclude = _eval_combo_keys(eval_path)
+    eval_prompts = _eval_prompt_keys(eval_path)
     rows: list[dict[str, Any]] = []
     rej_i = 0
 
@@ -109,12 +139,17 @@ def generate(teacher_backend: str, teacher: str, base: str, max_pairs: int, per_
             if made >= per_scenario or len(rows) >= max_pairs:
                 break
             emotion, utt_type, feats, strat = bev.ROLEPLAY_CASES[j]
+            if (scen_id, emotion, utt_type) in exclude:
+                continue
             difficulty = DIFFICULTIES[(idx + j) % len(DIFFICULTIES)]
             runtime = C.scenario_to_runtime(
                 scenario, target_skill=target_skill, difficulty=difficulty,
                 emotion_state=emotion, child_input=bev._child_input(step, strat),
                 observed_features=feats,
             )
+            prompt_key = json.dumps(runtime, ensure_ascii=False, sort_keys=True)
+            if prompt_key in eval_prompts:
+                continue
             user_content = json.dumps(runtime, ensure_ascii=False)
             try:
                 raw = C.teacher_generate(
@@ -201,12 +236,13 @@ def main() -> int:
                         help="rejected 후보를 뽑을 base 모델(Ollama, 빈 문자열이면 corruption만 사용)")
     parser.add_argument("--per-scenario", type=int, default=3)
     parser.add_argument("--max", type=int, default=600)
+    parser.add_argument("--eval", type=Path, default=C.PROCESSED_DIR / "eval_set.jsonl")
     parser.add_argument("--out", type=Path, default=C.PROCESSED_DIR / "dpo_train.jsonl")
     args = parser.parse_args()
 
     teacher = args.teacher or C.DEFAULT_TEACHER[args.teacher_backend]
     print(f"chosen teacher backend={args.teacher_backend} model={teacher}; rejected base={args.base}")
-    rows = generate(args.teacher_backend, teacher, args.base, args.max, args.per_scenario)
+    rows = generate(args.teacher_backend, teacher, args.base, args.max, args.per_scenario, args.eval)
     n = C.write_jsonl(args.out, rows)
     n_safety = sum(1 for r in rows if r["metadata"].get("kind") == "safety")
     print(f"OK: {n} DPO pairs -> {args.out} (safety {n_safety})")
