@@ -27,3 +27,42 @@ docker compose up --build
 세션 turn 로그는 서버 실행 중에만 유지되는 SQLite in-memory DB에 저장됩니다.
 
 자세한 Docker 실행 방법은 [docs/docker.md](docs/docker.md)를 참고하세요.
+
+## 통합 구성 (frontend · backend · ollama)
+
+`docker compose up --build` 시 3개 컨테이너가 함께 뜹니다.
+
+| 컨테이너 | 역할 |
+|----------|------|
+| `MazuTalk-frontend` | React/Vite UI + 표정(YOLOv8)·시선(MediaPipe)·VRM 아바타 |
+| `MazuTalk-backend` | FastAPI: STT → 발화분석 → 감정융합 → LLM → TTS → 세션/리포트 |
+| `MazuTalk-ollama` | GGUF(Qwen3 Q4) LLM 서빙 (`/api/chat`) |
+
+전체 흐름·모듈 연결은 [docs/USER_FLOW.md](docs/USER_FLOW.md), [docs/INTEGRATION_PLAN.md](docs/INTEGRATION_PLAN.md) 참고.
+
+## 모델 파일 (git 미포함, 별도 준비)
+
+대용량 모델 가중치는 GitHub 100MB 제한 때문에 git 에 포함하지 않습니다(`.gitignore`).
+**없어도 `docker compose up` 은 정상 기동**하며 아래처럼 graceful degradation 됩니다.
+
+| 파일 | 위치 | 부재 시 동작 |
+|------|------|--------------|
+| `model-q4_k_m.gguf` (LLM, ~2.3GB) | `ai/models/` | Ollama 등록 생략 → 백엔드 **규칙기반 fallback** 응답 |
+| `model.bin` 등 (튜닝 STT) | `ai/stt/models/faster-whisper-medium-child-lora-int8/` | faster-whisper **`medium` 자동 다운로드**로 폴백 |
+| `best.onnx` (표정), `*.vrm` (아바타) | git 포함 | — (바로 동작) |
+
+> LLM 을 켜려면: `model-f16.gguf` 를 `ai/models/` 에 두고 로컬에서 `llama-quantize ... Q4_K_M` 로 `model-q4_k_m.gguf` 생성(README 하단 참고) 후 `docker compose up`. Ollama 호스트 포트는 네이티브 Ollama 충돌을 피해 `11435` 입니다.
+
+## E2E 테스트
+
+```bash
+# 백엔드 파이프라인 (pytest + FastAPI TestClient)
+cd backend
+python -m venv .venv && .venv/Scripts/python.exe -m pip install fastapi httpx pytest python-multipart
+.venv/Scripts/python.exe -m pytest -q          # 22 passed
+
+# 프런트 오케스트레이션 + 리포트 (vitest)
+cd frontend && npm install && npm test          # 7 passed
+```
+
+테스트 범위·케이스·mock 은 [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md) 참고.

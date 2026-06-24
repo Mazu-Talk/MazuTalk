@@ -13,6 +13,8 @@ export interface SendUtteranceArgs {
   scenario: Scenario
   history: ConversationTurn[]
   content: UtteranceContent
+  /** 발화 시점의 표정 스냅샷 (YOLOv8) — 비전 융합용 */
+  facialEmotion?: string
 }
 
 type EventHandler = (event: ServerEvent) => void
@@ -112,6 +114,7 @@ class RealConnection implements RolePlayConnection {
         text: args.content.text,
         duration_seconds: args.content.durationSeconds,
         response_time_ms: args.responseTimeMs,
+        facial_emotion: args.facialEmotion,
       },
     }))
   }
@@ -126,6 +129,7 @@ class RealConnection implements RolePlayConnection {
     form.append('session_id', this.sessionId)
     form.append('turn_id', String(args.turnId))
     form.append('duration_seconds', String(args.content.durationSeconds))
+    if (args.facialEmotion) form.append('facial_emotion', args.facialEmotion)
     const responseStartedAt = Date.now() - args.content.durationSeconds * 1000
     form.append('response_requested_at', new Date(responseStartedAt - args.responseTimeMs).toISOString())
     form.append('response_started_at', new Date(responseStartedAt).toISOString())

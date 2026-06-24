@@ -90,6 +90,7 @@ async def session_websocket(websocket: WebSocket, session_id: str):
                 duration_seconds=event.payload.duration_seconds,
                 response_requested_at=response_requested_at,
                 response_started_at=response_started_at,
+                facial_emotion=event.payload.facial_emotion,
             )
             audio_url = None
             if result.audio_file_id:

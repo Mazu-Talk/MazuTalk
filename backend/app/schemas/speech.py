@@ -139,6 +139,7 @@ class WebSocketTurnPayload(BaseModel):
     text: str = Field(..., min_length=1)
     duration_seconds: float | None = Field(default=None, gt=0)
     response_time_ms: int | None = Field(default=None, ge=0)
+    facial_emotion: str | None = None
 
 
 class WebSocketClientEvent(BaseModel):

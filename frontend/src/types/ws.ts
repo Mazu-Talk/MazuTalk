@@ -17,7 +17,13 @@ export interface EndUtteranceEvent {
   session_id: string
   turn_id: number
   /** 브라우저 STT를 사용할 때는 인식된 텍스트를 직접 전달 (백엔드 STT 우회 경로) */
-  payload: { text: string; duration_seconds?: number; response_time_ms?: number }
+  payload: {
+    text: string
+    duration_seconds?: number
+    response_time_ms?: number
+    /** 발화 시점의 YOLOv8 표정 스냅샷 (비전 융합용) */
+    facial_emotion?: string
+  }
 }
 
 export type ClientEvent = AudioChunkEvent | EndUtteranceEvent

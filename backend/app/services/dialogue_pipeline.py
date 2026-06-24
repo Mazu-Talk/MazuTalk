@@ -7,7 +7,9 @@ from app.schemas.speech import LlmModuleResponse, SpeechAnalysisRequest, SpeechA
 from app.services.llm_client import LlmClient
 from app.services.session_store import append_turn, read_session, read_turns
 from app.services.speech_analysis import analyze_speech
+from app.services.scenario_catalog import get_scenario_context
 from app.services.tts_service import try_generate_tts
+from app.services.vision_fusion import avatar_state_for, fuse_emotion
 
 
 @dataclass
@@ -29,6 +31,7 @@ async def process_transcript(
     response_started_at: datetime | None = None,
     stt_model: str | None = None,
     stt_time_seconds: float | None = None,
+    facial_emotion: str | None = None,
 ) -> DialogueTurnResult:
     analysis = analyze_speech(
         SpeechAnalysisRequest(
@@ -38,12 +41,19 @@ async def process_transcript(
             response_started_at=response_started_at,
         )
     )
+    # 표정(YOLOv8)·음성 분석을 융합한 최종 감정
+    emotion = fuse_emotion(analysis.flags, facial_emotion)
+
+    # LLM 프롬프트에 비전 컨텍스트(감정/표정) 주입
+    child_profile = session_context(session_id)
+    child_profile.update({"facial_emotion": facial_emotion or "unknown", "fused_emotion": emotion})
+
     llm = await LlmClient().respond(
         session_id=session_id,
         transcript=analysis.transcript,
         analysis=analysis,
         conversation_history=conversation_history(session_id),
-        child_profile=session_context(session_id),
+        child_profile=child_profile,
     )
     append_turn(
         session_id=session_id,
@@ -59,7 +69,6 @@ async def process_transcript(
         llm.therapist_reply,
         1.1,
     )
-    emotion = infer_emotion(analysis)
     return DialogueTurnResult(
         analysis=analysis,
         llm=llm,
@@ -81,20 +90,6 @@ def session_context(session_id: str) -> dict[str, str]:
     session = read_session(session_id)
     if session is None:
         return {}
-    return {"child_id": session.child_id, "scenario_id": session.scenario_id}
-
-
-def infer_emotion(analysis: SpeechAnalysisResponse) -> str:
-    if "response_latency_delayed" in analysis.flags:
-        return "anxious"
-    if "repetition_detected" in analysis.flags:
-        return "confused"
-    if "speech_rate_slow" in analysis.flags:
-        return "shy"
-    return "neutral"
-
-
-def avatar_state_for(emotion: str) -> str:
-    if emotion in {"anxious", "confused", "shy", "frustrated"}:
-        return "encouraging"
-    return "speaking"
+    context = {"child_id": session.child_id, "scenario_id": session.scenario_id}
+    context.update(get_scenario_context(session.scenario_id))
+    return context

@@ -87,6 +87,26 @@ export interface EmotionPoint {
   emotion: Emotion
 }
 
+/** YOLOv8 표정 분류 클래스 — best.onnx 출력 (Roboflow 알파벳순) */
+export type VisionEmotion = 'happy' | 'neutral' | 'sad' | 'surprised'
+
+/** 시선 방향 — MediaPipe 홍채 추적 결과 */
+export type GazeDirection = 'left' | 'center' | 'right'
+
+/** 표정 감정 샘플 — EmotionDetector가 1초 간격으로 누적 */
+export interface EmotionSample {
+  label: VisionEmotion
+  confidence: number
+  timestamp: number
+}
+
+/** 시선 샘플 — GazeTracker가 1초 간격으로 누적 */
+export interface GazeSample {
+  direction: GazeDirection
+  irisPos: number
+  timestamp: number
+}
+
 /** 시선 요약 — MediaPipe 시선 추적 결과 */
 export interface GazeSummary {
   center: number  // 정면 비율 (%)

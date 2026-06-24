@@ -1,0 +1,6 @@
+FROM C:\Users\iwasi\Desktop\project\MazuTalk\ai\models\model-q4_k_m.gguf
+
+PARAMETER temperature 0.7
+PARAMETER top_p 0.8
+PARAMETER top_k 20
+PARAMETER num_predict 1024

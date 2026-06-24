@@ -27,3 +27,16 @@ ai/data/processed/stt/*.jsonl
 ai/data/processed/stt/wav/
 ai/data/processed/stt/**/wav/
 ai/stt/results/*.csv
+
+# 대용량 모델 가중치 (GitHub 100MB 제한 — git 미추적, 별도 배포)
+*.gguf
+*.safetensors
+# 튜닝 STT 모델(model.bin 등) — 부재 시 STT 는 medium 으로 자동 폴백
+ai/stt/models/
+
+# TTS 출력 오디오
+output_audio/
+backend/output_audio/
+
+# 테스트 venv (E2E 용 — 각자 생성)
+backend/.venv/

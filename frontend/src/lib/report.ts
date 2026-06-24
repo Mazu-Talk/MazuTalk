@@ -2,6 +2,8 @@ import type {
   ConversationTurn,
   Emotion,
   EmotionPoint,
+  GazeSample,
+  GazeSummary,
   Report,
   Session,
 } from '@/types/domain'
@@ -15,6 +17,7 @@ export function buildReport(
   session: Session,
   turns: ConversationTurn[],
   nowIso: string,
+  gazeLog: GazeSample[] = [],
 ): Report {
   const childTurns = turns.filter((t) => t.speaker === 'child')
 
@@ -56,7 +59,17 @@ export function buildReport(
     participation_score: computeParticipationScore(childTurns),
     completion_status: session.status === 'completed' ? 'completed' : 'interrupted',
     created_at: nowIso,
+    gaze_summary: computeGazeSummary(gazeLog),
   }
+}
+
+/** 시선 로그 → 정면/좌/우 비율(%) 요약. 데이터가 없으면 undefined. */
+function computeGazeSummary(gazeLog: GazeSample[]): GazeSummary | undefined {
+  const total = gazeLog.length
+  if (total === 0) return undefined
+  const ratio = (dir: GazeSample['direction']) =>
+    Math.round((gazeLog.filter((g) => g.direction === dir).length / total) * 100)
+  return { center: ratio('center'), left: ratio('left'), right: ratio('right') }
 }
 
 function mostFrequentEmotion(emotions: Emotion[]): Emotion {

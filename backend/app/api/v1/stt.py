@@ -22,6 +22,7 @@ async def transcribe_and_continue_dialogue(
     duration_seconds: float | None = Form(default=None),
     response_requested_at: datetime | None = Form(default=None),
     response_started_at: datetime | None = Form(default=None),
+    facial_emotion: str | None = Form(default=None),
 ):
     current_turn_id = turn_id or new_turn_id()
     suffix = Path(audio.filename or "recording.webm").suffix or ".webm"
@@ -41,6 +42,7 @@ async def transcribe_and_continue_dialogue(
             response_started_at=response_started_at,
             stt_model=stt.model_name,
             stt_time_seconds=stt.elapsed_seconds,
+            facial_emotion=facial_emotion,
         )
         audio_url = None
         if result.audio_file_id:

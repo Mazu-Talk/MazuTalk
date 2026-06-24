@@ -30,11 +30,11 @@ export function ReportView({ report, scenario }: ReportViewProps) {
         </div>
       </Card>
 
-      {/* 참여도 게이지 + 핵심 지표 */}
+      {/* 참여도 + 정면 집중도 게이지 (한 행) */}
       <div className="grid gap-5 md:grid-cols-2">
         <Card className="flex flex-col items-center justify-center gap-2">
           <h3 className="text-lg font-bold text-brand-700">참여도</h3>
-          <ParticipationGauge score={report.participation_score} />
+          <Gauge value={report.participation_score} suffix="점" />
           <p className="text-base text-brand-600">
             {report.completion_status === 'completed'
               ? '끝까지 잘 해냈어요! 🎉'
@@ -42,7 +42,18 @@ export function ReportView({ report, scenario }: ReportViewProps) {
           </p>
         </Card>
 
-        <Card className="flex flex-col justify-center gap-4">
+        <Card className="flex flex-col items-center justify-center gap-2">
+          <h3 className="text-lg font-bold text-brand-700">정면 집중도</h3>
+          <Gauge value={report.gaze_summary?.center ?? 0} suffix="%" />
+          <p className="text-base text-brand-600">
+            {report.gaze_summary ? '친구를 잘 바라봤어요 👀' : '시선 데이터가 없어요'}
+          </p>
+        </Card>
+      </div>
+
+      {/* 핵심 지표 3종 (하단 한 행 전체) */}
+      <Card>
+        <div className="grid gap-5 sm:grid-cols-3">
           <StatBar
             label="총 대화 수"
             value={report.total_turns}
@@ -65,18 +76,8 @@ export function ReportView({ report, scenario }: ReportViewProps) {
             unit="글자"
             emoji="✍️"
           />
-          {/* 시선 집중도 — MediaPipe 시선 추적 결과 (선택적) */}
-          {report.gaze_summary && (
-            <StatBar
-              label="정면 집중도"
-              value={report.gaze_summary.center}
-              max={100}
-              unit="%"
-              emoji="👀"
-            />
-          )}
-        </Card>
-      </div>
+        </div>
+      </Card>
 
       {/* 감정 추이 그래프 */}
       <Card>
@@ -87,9 +88,9 @@ export function ReportView({ report, scenario }: ReportViewProps) {
   )
 }
 
-/** 반원형 참여도 게이지 (0~100) */
-function ParticipationGauge({ score }: { score: number }) {
-  const clamped = Math.max(0, Math.min(100, score))
+/** 반원형 게이지 (0~100) — 참여도·정면 집중도 공용 */
+function Gauge({ value, suffix = '점' }: { value: number; suffix?: string }) {
+  const clamped = Math.max(0, Math.min(100, value))
   const radius = 80
   const circumference = Math.PI * radius
   const offset = circumference * (1 - clamped / 100)
@@ -118,7 +119,7 @@ function ParticipationGauge({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-x-0 bottom-0 text-center">
         <span className="text-4xl font-extrabold text-brand-800">{clamped}</span>
-        <span className="text-lg text-brand-500"> 점</span>
+        <span className="text-lg text-brand-500"> {suffix}</span>
       </div>
     </div>
   )
