@@ -184,14 +184,12 @@ flowchart LR
 
 | 모듈 | 기준 모델 | 학습/실행 방식 |
 |---|---|---|
-| STT | `openai/whisper-medium` | LoRA(rank 16) 학습 후 Faster-Whisper int8 변환 |
+| STT | [`molcham/MazuTalk-faster-whisper-medium-child-lora-int8`](https://huggingface.co/molcham/MazuTalk-faster-whisper-medium-child-lora-int8) | `openai/whisper-medium` LoRA(rank 16) 학습 후 Faster-Whisper int8 변환 |
 | STT fallback | Faster-Whisper `medium` | 기본 한국어 전사 모델 |
 | Role-play LLM | [`iaminsam/mazutalk-qwen3.5-roleplay`](https://huggingface.co/iaminsam/mazutalk-qwen3.5-roleplay) | QLoRA SFT → DPO 학습 모델 배포 |
 | Local LLM runtime | `qwen3.5:4b` | Ollama baseline/서빙 기준 |
 | TTS | MeloTTS Korean | 서버 음성 합성, 실패 시 브라우저 TTS |
 | Emotion | YOLOv8 ONNX | 브라우저 ONNX Runtime Web 추론 |
-
-
 
 ---
 
@@ -204,7 +202,7 @@ flowchart LR
 | 모델 | Hugging Face 저장소 | 로컬 권장 경로 | 상태 |
 |---|---|---|:---:|
 | Role-play LLM | [`iaminsam/mazutalk-qwen3.5-roleplay`](https://huggingface.co/iaminsam/mazutalk-qwen3.5-roleplay) | `ai/models/mazutalk-qwen3.5-roleplay/` | ✅ 배포 |
-| 아동 음성 STT | 배포 주소 추가 예정 | `ai/stt/models/faster-whisper-medium-child-lora-int8/` | 🚧 배포 준비 중 |
+| 아동 음성 STT | [`molcham/MazuTalk-faster-whisper-medium-child-lora-int8`](https://huggingface.co/molcham/MazuTalk-faster-whisper-medium-child-lora-int8) · [`b193558`](https://huggingface.co/molcham/MazuTalk-faster-whisper-medium-child-lora-int8) | `ai/stt/models/faster-whisper-medium-child-lora-int8/` | ✅ 배포 |
 
 #### Hugging Face CLI로 다운로드
 
@@ -214,19 +212,17 @@ python3 -m pip install -U huggingface_hub
 # LLM 모델 전체 다운로드
 hf download iamsinsam/mazutalk-qwen3.5-roleplay \
   --local-dir ai/models/mazutalk-qwen3.5-roleplay
+
+# STT 모델 다운로드 — 배포 revision 고정
+hf download molcham/MazuTalk-faster-whisper-medium-child-lora-int8 \
+  --revision b1935585b8b2e431729f49c45eee2164829d7493 \
+  --local-dir ai/stt/models/faster-whisper-medium-child-lora-int8
 ```
 
 비공개 또는 승인이 필요한 모델은 먼저 로그인합니다.
 
 ```bash
 hf auth login
-```
-
-STT 모델 저장소가 공개되면 같은 방식으로 Docker가 참조하는 경로에 내려받습니다.
-
-```bash
-hf download <HUGGINGFACE_STT_REPOSITORY> \
-  --local-dir ai/stt/models/faster-whisper-medium-child-lora-int8
 ```
 
 #### 모델별 실행 연결
