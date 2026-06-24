@@ -84,8 +84,13 @@ class SttPipelineResponse(BaseModel):
     transcript: str
     stt_model: str
     stt_time_seconds: float
+    stt_fallback_used: bool = False
+    stt_fallback_reason: str | None = None
     analysis: SpeechAnalysisResponse
     llm: LlmModuleResponse
+    audio_url: str | None = None
+    emotion: str = "neutral"
+    avatar_state: str = "speaking"
 
 
 class SessionTurn(BaseModel):
@@ -110,3 +115,34 @@ class WebSocketTurnRequest(BaseModel):
     response_requested_at: datetime | None = None
     response_started_at: datetime | None = None
     turn_id: str | None = None
+
+
+class SessionCreateRequest(BaseModel):
+    scenario_id: str = Field(..., min_length=1)
+    child_id: str = Field(default="anonymous", min_length=1)
+
+
+class SessionEndRequest(BaseModel):
+    status: str = Field(default="completed", pattern="^(completed|interrupted)$")
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+    child_id: str
+    scenario_id: str
+    started_at: datetime
+    ended_at: datetime | None = None
+    status: str
+
+
+class WebSocketTurnPayload(BaseModel):
+    text: str = Field(..., min_length=1)
+    duration_seconds: float | None = Field(default=None, gt=0)
+    response_time_ms: int | None = Field(default=None, ge=0)
+
+
+class WebSocketClientEvent(BaseModel):
+    type: str = Field(pattern="^end_utterance$")
+    session_id: str
+    turn_id: int
+    payload: WebSocketTurnPayload

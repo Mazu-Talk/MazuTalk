@@ -28,17 +28,32 @@ docker compose down
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000
-CORS_ORIGINS=http://localhost:5173
+VITE_USE_MOCK=false
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 AI_SERVICE_URL=
 
-STT_MODEL=medium
-STT_FALLBACK_MODEL=small
+STT_MODEL=/app/models/stt
+STT_MODEL_HOST_PATH=./ai/stt/models/faster-whisper-medium-child-lora-int8
+STT_FALLBACK_MODEL=medium
 STT_DEVICE=cpu
 STT_COMPUTE_TYPE=int8
+STT_BEAM_SIZE=3
 SESSION_DB_PATH=:memory:
 ```
 
-STT 기본 모델은 정확도 우선으로 `medium`을 사용합니다. 모델 로드나 추론에 실패하면 `small`로 fallback하도록 구성합니다.
+STT 기본 모델은 아동 발화로 학습한 LoRA를 병합한 Faster-Whisper int8 모델입니다. 모델 로드/추론 실패, 빈 결과, 비정상적으로 긴 결과, 문자 반복 hallucination이 감지되면 기본 Faster-Whisper `medium`으로 fallback합니다.
+
+변환 모델은 Git에 포함하지 않습니다. 실행 전에 아래 폴더가 있어야 합니다.
+
+```text
+ai/stt/models/faster-whisper-medium-child-lora-int8/
+├── model.bin
+├── config.json
+├── tokenizer.json
+└── vocabulary.json
+```
+
+다른 위치에 저장했다면 `.env`의 `STT_MODEL_HOST_PATH`를 해당 폴더로 변경합니다.
 
 ## 4. Backend API
 
@@ -65,18 +80,29 @@ SESSION_DB_PATH=:memory:
 
 따라서 서버 프로세스가 살아있는 동안만 세션/turn 로그가 유지되고, 컨테이너를 재시작하거나 서버를 종료하면 기록은 사라집니다. 결과보고서 생성처럼 한 세션 안에서 임시로 누적해야 하는 데이터에 사용합니다.
 
-## 6. 모델 warm-up
+## 6. 전체 파이프라인 데모
 
-Faster-Whisper `medium`은 첫 요청에서 모델 다운로드/로드가 발생할 수 있습니다. 회의나 데모 전에 `/api/v1/stt/pipeline`을 한 번 호출해 warm-up 해두면 이후 요청이 더 안정적입니다.
+1. `docker compose up --build`를 실행합니다.
+2. http://localhost:5173 에 접속합니다.
+3. 역할극 세션에 진입하고 마이크 권한을 허용합니다.
+4. 짧은 문장을 말한 뒤 녹음을 종료합니다.
+5. 화면에서 인식 문장과 LLM 답변을 확인하고 TTS 재생을 듣습니다.
+6. http://localhost:8000/docs 또는 세션 로그 API에서 분석 결과를 확인합니다.
 
-## 7. 로그 확인
+`AI_SERVICE_URL`이 비어 있으면 백엔드 규칙 기반 LLM fallback을 사용합니다. MeloTTS를 사용할 수 없으면 프론트엔드가 브라우저 음성 합성으로 답변을 재생합니다.
+
+## 7. 모델 warm-up
+
+학습 모델과 fallback `medium`은 첫 요청에서 로드 시간이 발생할 수 있습니다. 회의나 데모 전에 `/api/v1/stt/pipeline`을 한 번 호출해 warm-up 해두면 이후 요청이 더 안정적입니다. CPU 실행은 한 발화에 수십 초가 걸릴 수 있으므로 실제 운영/시연 환경은 NVIDIA GPU와 `STT_DEVICE=cuda`, `STT_COMPUTE_TYPE=float16`을 권장합니다.
+
+## 8. 로그 확인
 
 ```bash
 docker compose logs -f backend
 docker compose logs -f frontend
 ```
 
-## 8. 문제 해결
+## 9. 문제 해결
 
 컨테이너 상태 확인:
 

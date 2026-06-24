@@ -1,23 +1,18 @@
-/**
- * 실시간 대화 연결 — ARCHITECTURE.md §8.2 WebSocket API.
- *
- * mock 모드: 백엔드 없이 STT결과 → 아바타 thinking → AI응답 파이프라인을 타이머로 시뮬레이션한다.
- * real 모드: /ws/sessions/{session_id} 에 연결하여 동일한 ServerEvent 스트림을 수신한다.
- *
- * 어느 모드든 소비자(sessionStore)는 onEvent(ServerEvent) 한 가지 인터페이스만 사용한다.
- */
 import type { ConversationTurn, Scenario } from '@/types/domain'
-import type { ServerEvent } from '@/types/ws'
-import { USE_MOCK, WS_BASE } from './config'
+import type { ServerEvent, SttPipelineResponse } from '@/types/ws'
+import { REST_BASE, USE_MOCK, WS_BASE } from './config'
 import { generateMockTurn } from './mockEngine'
+
+export type UtteranceContent =
+  | { text: string; audio?: never; durationSeconds?: number }
+  | { audio: Blob; text?: never; durationSeconds: number }
 
 export interface SendUtteranceArgs {
   turnId: number
-  text: string
   responseTimeMs: number
-  /** mock 엔진에 필요한 컨텍스트 (real 모드에서는 서버가 보유하므로 무시됨) */
   scenario: Scenario
   history: ConversationTurn[]
+  content: UtteranceContent
 }
 
 type EventHandler = (event: ServerEvent) => void
@@ -28,16 +23,10 @@ export interface RolePlayConnection {
   close(): void
 }
 
-/** 연결 생성 팩토리 */
 export function connectRolePlay(sessionId: string): RolePlayConnection {
-  return USE_MOCK
-    ? new MockConnection()
-    : new RealConnection(sessionId)
+  return USE_MOCK ? new MockConnection() : new RealConnection(sessionId)
 }
 
-// ---------------------------------------------------------------------------
-// Mock 구현
-// ---------------------------------------------------------------------------
 class MockConnection implements RolePlayConnection {
   private handler: EventHandler | null = null
   private timers: ReturnType<typeof setTimeout>[] = []
@@ -46,37 +35,33 @@ class MockConnection implements RolePlayConnection {
     this.handler = handler
   }
 
-  sendUtterance({ turnId, text, responseTimeMs, scenario, history }: SendUtteranceArgs) {
-    // 1) STT 결과 (사용자가 말한 내용 확정) — 거의 즉시
-    this.schedule(150, {
-      type: 'stt_result',
-      payload: { text, turn_id: turnId },
-    })
-
-    // 2) 아바타: 생각 중
-    this.schedule(300, {
-      type: 'avatar_state',
-      payload: { avatar_state: 'thinking' },
-    })
-
-    // 3) AI 응답 (LLM + 감정 + 아바타 상태). 데모용으로 0.8~1.3초 지연.
-    const think = 800 + Math.min(text.length * 20, 500)
+  sendUtterance({ turnId, responseTimeMs, scenario, history, content }: SendUtteranceArgs) {
+    if (!content.text) {
+      this.schedule(0, {
+        type: 'error',
+        payload: { message: 'Mock 모드에서는 브라우저 음성 인식을 사용해 주세요.', recoverable: true },
+      })
+      return
+    }
+    const text = content.text
+    this.schedule(150, { type: 'stt_result', payload: { text, turn_id: turnId } })
+    this.schedule(300, { type: 'avatar_state', payload: { avatar_state: 'thinking' } })
     const out = generateMockTurn({ scenario, childText: text, responseTimeMs, history })
-    this.schedule(300 + think, {
+    this.schedule(1100 + Math.min(text.length * 20, 500), {
       type: 'ai_response',
       payload: {
         text: out.text,
         emotion: out.emotion,
-        audio_url: null, // mock: 브라우저 SpeechSynthesis 로 재생
+        audio_url: null,
         avatar_state: out.avatarState,
-        turn_id: turnId + 1,
+        turn_id: turnId,
       },
     })
   }
 
   private schedule(ms: number, event: ServerEvent) {
-    const t = setTimeout(() => this.handler?.(event), ms)
-    this.timers.push(t)
+    const timer = setTimeout(() => this.handler?.(event), ms)
+    this.timers.push(timer)
   }
 
   close() {
@@ -86,55 +71,87 @@ class MockConnection implements RolePlayConnection {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Real 구현 (백엔드 준비 시 사용)
-// ---------------------------------------------------------------------------
 class RealConnection implements RolePlayConnection {
   private ws: WebSocket
   private handler: EventHandler | null = null
   private queue: string[] = []
   private ready = false
+  private closed = false
 
-  constructor(sessionId: string) {
-    this.ws = new WebSocket(`${WS_BASE}/sessions/${sessionId}`)
+  constructor(private readonly sessionId: string) {
+    this.ws = new WebSocket(`${WS_BASE}/sessions/${sessionId}/ws`)
     this.ws.onopen = () => {
       this.ready = true
-      this.queue.forEach((m) => this.ws.send(m))
+      this.queue.forEach((message) => this.ws.send(message))
       this.queue = []
     }
-    this.ws.onmessage = (msg) => {
+    this.ws.onmessage = (message) => {
       try {
-        const event = JSON.parse(msg.data) as ServerEvent
-        this.handler?.(event)
+        this.handler?.(JSON.parse(message.data) as ServerEvent)
       } catch {
-        this.handler?.({
-          type: 'error',
-          payload: { message: '응답을 읽지 못했어요.', recoverable: true },
-        })
+        this.emitError('응답을 읽지 못했어요.')
       }
     }
-    this.ws.onerror = () => {
-      this.handler?.({
-        type: 'error',
-        payload: { message: '연결에 문제가 생겼어요.', recoverable: true },
-      })
-    }
+    this.ws.onerror = () => this.emitError('실시간 연결에 문제가 생겼어요.')
   }
 
   onEvent(handler: EventHandler) {
     this.handler = handler
   }
 
-  sendUtterance({ turnId, text }: SendUtteranceArgs) {
-    // 브라우저 STT로 이미 텍스트를 얻었으므로 end_utterance 에 text 를 실어 보낸다.
-    this.send(
-      JSON.stringify({
-        type: 'end_utterance',
-        session_id: '',
-        turn_id: turnId,
-        payload: { text },
-      }),
-    )
+  sendUtterance(args: SendUtteranceArgs) {
+    if (args.content.audio) {
+      void this.sendAudio(args)
+      return
+    }
+    this.send(JSON.stringify({
+      type: 'end_utterance',
+      session_id: this.sessionId,
+      turn_id: args.turnId,
+      payload: {
+        text: args.content.text,
+        duration_seconds: args.content.durationSeconds,
+        response_time_ms: args.responseTimeMs,
+      },
+    }))
+  }
+
+  private async sendAudio(args: SendUtteranceArgs) {
+    const audio = args.content.audio
+    if (!audio) return
+    this.handler?.({ type: 'avatar_state', payload: { avatar_state: 'thinking' } })
+    const form = new FormData()
+    const extension = audio.type.includes('ogg') ? 'ogg' : 'webm'
+    form.append('audio', audio, `turn-${args.turnId}.${extension}`)
+    form.append('session_id', this.sessionId)
+    form.append('turn_id', String(args.turnId))
+    form.append('duration_seconds', String(args.content.durationSeconds))
+    const responseStartedAt = Date.now() - args.content.durationSeconds * 1000
+    form.append('response_requested_at', new Date(responseStartedAt - args.responseTimeMs).toISOString())
+    form.append('response_started_at', new Date(responseStartedAt).toISOString())
+
+    try {
+      const response = await fetch(`${REST_BASE}/stt/pipeline`, { method: 'POST', body: form })
+      if (!response.ok) throw new Error(`STT pipeline returned ${response.status}`)
+      const result = (await response.json()) as SttPipelineResponse
+      if (this.closed) return
+      this.handler?.({
+        type: 'stt_result',
+        payload: { text: result.transcript, turn_id: args.turnId },
+      })
+      this.handler?.({
+        type: 'ai_response',
+        payload: {
+          text: result.llm.therapist_reply,
+          emotion: result.emotion,
+          audio_url: result.audio_url,
+          avatar_state: result.avatar_state,
+          turn_id: args.turnId,
+        },
+      })
+    } catch {
+      if (!this.closed) this.emitError('음성을 처리하지 못했어요.')
+    }
   }
 
   private send(message: string) {
@@ -142,7 +159,12 @@ class RealConnection implements RolePlayConnection {
     else this.queue.push(message)
   }
 
+  private emitError(message: string) {
+    this.handler?.({ type: 'error', payload: { message, recoverable: true } })
+  }
+
   close() {
+    this.closed = true
     this.handler = null
     this.ws.close()
   }

@@ -3,6 +3,7 @@ services:
     build: ./frontend
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
     ports:
       - "5173:5173"
     depends_on:
@@ -13,11 +14,16 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-development}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       SESSION_DB_PATH: ${SESSION_DB_PATH:-:memory:}
-      STT_MODEL: ${STT_MODEL:-medium}
-      STT_FALLBACK_MODEL: ${STT_FALLBACK_MODEL:-small}
+      STT_MODEL: ${STT_MODEL:-/app/models/stt}
+      STT_FALLBACK_MODEL: ${STT_FALLBACK_MODEL:-medium}
       STT_DEVICE: ${STT_DEVICE:-cpu}
       STT_COMPUTE_TYPE: ${STT_COMPUTE_TYPE:-int8}
+      STT_BEAM_SIZE: ${STT_BEAM_SIZE:-3}
+      TTS_DEVICE: ${TTS_DEVICE:-auto}
+      TTS_OUTPUT_DIR: ${TTS_OUTPUT_DIR:-/app/output_audio}
     ports:
       - "8000:8000"
+    volumes:
+      - ${STT_MODEL_HOST_PATH:-./ai/stt/models/faster-whisper-medium-child-lora-int8}:/app/models/stt:ro
