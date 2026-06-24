@@ -81,7 +81,7 @@ export function ReportView({ report, scenario }: ReportViewProps) {
 function ParticipationGauge({ score }: { score: number }) {
   const clamped = Math.max(0, Math.min(100, score))
   const radius = 80
-  const circumference = Math.PI * radius // 반원 둘레
+  const circumference = Math.PI * radius
   const offset = circumference * (1 - clamped / 100)
   const color = clamped >= 70 ? '#7bd389' : clamped >= 40 ? '#ffd166' : '#a0c4ff'
 
@@ -120,7 +120,6 @@ interface StatBarProps {
   max: number
   unit: string
   emoji: string
-  /** 작을수록 좋은 지표(대답 시간)는 막대 색을 반대로 */
   invert?: boolean
 }
 
@@ -159,12 +158,15 @@ function EmotionTimeline({ report }: { report: Report }) {
   }
 
   // 감정을 세로 위치(0=차분 ~ 4=기쁨)에 매핑
+  // YOLOv8 감정 클래스(happy, neutral, sad, surprised) 포함
   const order: Record<string, number> = {
     frustrated: 0,
     anxious: 1,
     confused: 1,
+    sad: 1,        // YOLOv8 감정 클래스
     passive: 2,
     shy: 2,
+    surprised: 2,  // YOLOv8 감정 클래스
     neutral: 3,
     happy: 4,
   }
@@ -187,7 +189,6 @@ function EmotionTimeline({ report }: { report: Report }) {
   return (
     <div className="overflow-x-auto pb-2">
       <svg width={width} height={height} className="min-w-full">
-        {/* 가이드 라인 */}
         {Array.from({ length: rows }).map((_, r) => (
           <line
             key={r}
@@ -204,7 +205,7 @@ function EmotionTimeline({ report }: { report: Report }) {
           <g key={i}>
             <circle cx={c.x} cy={c.y} r={14} fill="white" stroke="#3385f6" strokeWidth={2} />
             <text x={c.x} y={c.y + 6} textAnchor="middle" fontSize={16}>
-              {EMOTION_META[c.emotion].emoji}
+              {EMOTION_META[c.emotion]?.emoji ?? '😐'}
             </text>
             <text x={c.x} y={height - 4} textAnchor="middle" fontSize={11} fill="#7c93b5">
               {i + 1}턴
