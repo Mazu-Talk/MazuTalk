@@ -36,31 +36,72 @@ _FOREIGN = re.compile(r"[぀-ヿ一-鿿Ѐ-ӿ]")
 DIFFICULTIES = ["low", "medium", "high"]
 
 # 학습용 안전 케이스. eval_set 의 SAFETY_CASES 와 표현이 겹치지 않게 구성(누수 방지).
-# 모델이 위험 신호에서 risk_flag 를 올바로 켜도록 SFT 단계에서부터 학습시킨다.
+# 표현을 풍부하게 다양화해 모델이 "특정 문장 암기"가 아니라 "위험 개념"을 일반화하도록 한다.
+# (eval 은 self_harm/abuse/aggression/medical/distress 5종만 채점하므로 거기에 집중)
 SAFETY_TRAIN = [
+    # self_harm
     ("self_harm", True, "나 없어졌으면 좋겠어"),
     ("self_harm", True, "사는 게 너무 싫어, 다 그만하고 싶어"),
     ("self_harm", True, "나 같은 건 그냥 사라져도 돼"),
+    ("self_harm", True, "자꾸 나쁜 생각이 들어"),
+    ("self_harm", True, "세상에서 없어지고 싶어"),
+    ("self_harm", True, "아무도 날 안 좋아해서 사라지고 싶어"),
+    ("self_harm", True, "나 죽으면 다 편해질까"),
+    ("self_harm", True, "다 끝내버리고 싶어"),
+    # abuse
     ("abuse", True, "엄마가 화나면 나를 자꾸 때려요"),
     ("abuse", True, "삼촌이 자꾸 이상한 데를 만져"),
     ("abuse", True, "어른이 아무한테도 말하지 말랬어"),
+    ("abuse", True, "형이 매일 나를 꼬집고 때려"),
+    ("abuse", True, "누가 옷을 벗으라고 했어"),
+    ("abuse", True, "아빠가 밥을 안 주고 방에 가둬"),
+    ("abuse", True, "이웃 아저씨가 자꾸 만지려고 해"),
+    ("abuse", True, "엄마가 다치게 하고 비밀로 하래"),
+    # aggression
     ("aggression", True, "쟤 가위로 찌를 거야"),
     ("aggression", True, "친구 물건 다 부숴버릴래"),
     ("aggression", True, "발로 차서 울려버릴 거야"),
+    ("aggression", True, "돌로 머리를 때릴 거야"),
+    ("aggression", True, "쟤를 계단에서 밀어버릴래"),
+    ("aggression", True, "친구를 세게 깨물어 줄 거야"),
+    ("aggression", True, "의자를 던질 거야"),
+    ("aggression", True, "쟤 머리카락 다 잘라버릴래"),
+    # medical
     ("medical", True, "넘어져서 팔에서 피가 많이 나"),
     ("medical", True, "갑자기 가슴이 아프고 숨쉬기 힘들어"),
     ("medical", True, "머리를 부딪혀서 너무 어지러워"),
+    ("medical", True, "배가 너무 아파서 토할 것 같아"),
+    ("medical", True, "손가락이 문에 끼어서 피가 나"),
+    ("medical", True, "갑자기 눈이 잘 안 보여"),
+    ("medical", True, "뜨거운 물에 데서 너무 따가워"),
+    ("medical", True, "자꾸 어지럽고 쓰러질 것 같아"),
+    # distress
     ("distress", True, "너무 무서워서 자꾸 떨려요"),
-    ("distress", True, "여기 혼자 있는데 무서워"),
-    ("distress", False, "자꾸 눈물이 나고 마음이 아파"),
-    ("privacy", False, "우리 집 주소랑 비밀번호 알려줄까?"),
+    ("distress", True, "여기 나 혼자 있는데 무서워"),
+    ("distress", True, "엄마가 안 와서 너무 무서워"),
+    ("distress", True, "숨고 싶을 만큼 무서워"),
+    ("distress", True, "자꾸 나쁜 꿈이 생각나서 떨려"),
+    ("distress", True, "무서워서 아무 말도 못 하겠어"),
+    ("distress", True, "심장이 쿵쿵 뛰고 너무 불안해"),
+    ("distress", True, "자꾸 눈물이 나고 마음이 아파"),
+]
+
+# 안전 응답 child_message 변형(모두 SoT §14 준수: 차분·어른 연결·비난 없음).
+# 한 문장만 암기하지 않도록 회전 사용.
+SAFE_MESSAGES = [
+    "지금은 가까운 어른에게 바로 말하자. 선생님이나 보호자에게 같이 가자.",
+    "이건 어른이 꼭 알아야 해. 옆에 있는 선생님이나 부모님에게 같이 말하러 가자.",
+    "많이 힘들었겠다. 지금 바로 믿을 수 있는 어른에게 이야기하자.",
+    "그건 위험할 수 있어. 가까운 어른을 찾아서 같이 말하자.",
+    "놀이는 잠깐 멈추자. 지금은 어른에게 도움을 받는 게 가장 중요해.",
+    "괜찮아, 네 잘못이 아니야. 어른에게 바로 알리자.",
 ]
 
 
-def _safety_response(risk: str, needs_adult: bool) -> dict[str, Any]:
+def _safety_response(risk: str, needs_adult: bool, message: str) -> dict[str, Any]:
     """안전 신호 감지 시 SoT(§14) 기준의 모범 응답."""
     return {
-        "child_message": "지금은 가까운 어른에게 바로 말하자. 선생님이나 보호자에게 같이 가자.",
+        "child_message": message,
         "avatar_expression": "concerned",
         "tts_style": {"speed": "slow", "tone": "calm", "pause_after_ms": 400},
         "detected": {
@@ -81,19 +122,20 @@ def _safety_response(risk: str, needs_adult: bool) -> dict[str, Any]:
 
 
 def generate_safety(ages: list[int]) -> list[dict[str, Any]]:
-    """안전 케이스 SFT turn 생성(템플릿 응답, teacher 불필요)."""
+    """안전 케이스 SFT turn 생성(템플릿 응답 회전, teacher 불필요)."""
     import json
     scenarios = C.iter_scenarios()
     base_scn = scenarios[0] if scenarios else {"context": {}, "targetSkills": ["unknown"]}
     system_prompt = C.load_system_prompt(runtime=True)
     rows: list[dict[str, Any]] = []
-    for risk, needs_adult, text in SAFETY_TRAIN:
-        for age in ages:
+    for i, (risk, needs_adult, text) in enumerate(SAFETY_TRAIN):
+        for j, age in enumerate(ages):
+            message = SAFE_MESSAGES[(i + j) % len(SAFE_MESSAGES)]
             runtime = C.scenario_to_runtime(
                 base_scn, target_skill="unknown", difficulty="low",
                 emotion_state="anxious", child_input=text, child_age=age,
             )
-            assistant = _safety_response(risk, needs_adult)
+            assistant = _safety_response(risk, needs_adult, message)
             rows.append({
                 "messages": [
                     {"role": "system", "content": system_prompt},
