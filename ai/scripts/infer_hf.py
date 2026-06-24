@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import time
 from pathlib import Path
 
@@ -40,9 +41,15 @@ def main() -> int:
     args = parser.parse_args()
 
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, set_seed
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-    set_seed(args.seed)
+    def seed_everything(seed: int) -> None:
+        random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+
+    seed_everything(args.seed)
 
     mcfg = load_yaml(args.model_config)
     src = str(args.merged) if args.merged else mcfg["base_model"]
@@ -101,7 +108,7 @@ def main() -> int:
     with args.out.open("w", encoding="utf-8") as fh:
         for case_idx, case in enumerate(cases):
             user_content = json.dumps(case["input"], ensure_ascii=False)
-            set_seed(args.seed + case_idx)
+            seed_everything(args.seed + case_idx)
             t0 = time.perf_counter()
             raw = ""
             error = None
