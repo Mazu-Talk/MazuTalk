@@ -22,7 +22,7 @@ from jsonschema import Draft202012Validator
 
 import common as C
 import build_eval_set as bev
-from build_sft_data import validate_assistant, SAFETY_TRAIN
+from build_sft_data import validate_assistant, SAFETY_TRAIN, SAFE_MESSAGES
 
 
 OUTPUT_VALIDATOR = Draft202012Validator(C.build_output_schema())
