@@ -186,7 +186,7 @@ flowchart LR
 |---|---|---|
 | STT | `openai/whisper-medium` | LoRA(rank 16) 학습 후 Faster-Whisper int8 변환 |
 | STT fallback | Faster-Whisper `medium` | 기본 한국어 전사 모델 |
-| Role-play LLM | `Qwen/Qwen3-4B-Instruct-2507` | 4-bit QLoRA SFT → DPO → GGUF Q4_K_M |
+| Role-play LLM | [`iaminsam/mazutalk-qwen3.5-roleplay`](https://huggingface.co/iaminsam/mazutalk-qwen3.5-roleplay) | QLoRA SFT → DPO 학습 모델 배포 |
 | Local LLM runtime | `qwen3.5:4b` | Ollama baseline/서빙 기준 |
 | TTS | MeloTTS Korean | 서버 음성 합성, 실패 시 브라우저 TTS |
 | Emotion | YOLOv8 ONNX | 브라우저 ONNX Runtime Web 추론 |
@@ -197,7 +197,84 @@ flowchart LR
 
 ## 5. 실행 및 시연
 
-### 5-1. 빠른 시작 — Docker Compose
+### 5-1. 모델 배포 및 다운로드
+
+대용량 모델 파일은 Git 저장소에 포함하지 않고 Hugging Face Hub에서 별도로 배포합니다.
+
+| 모델 | Hugging Face 저장소 | 로컬 권장 경로 | 상태 |
+|---|---|---|:---:|
+| Role-play LLM | [`iaminsam/mazutalk-qwen3.5-roleplay`](https://huggingface.co/iaminsam/mazutalk-qwen3.5-roleplay) | `ai/models/mazutalk-qwen3.5-roleplay/` | ✅ 배포 |
+| 아동 음성 STT | 배포 주소 추가 예정 | `ai/stt/models/faster-whisper-medium-child-lora-int8/` | 🚧 배포 준비 중 |
+
+#### Hugging Face CLI로 다운로드
+
+```bash
+python3 -m pip install -U huggingface_hub
+
+# LLM 모델 전체 다운로드
+hf download iamsinsam/mazutalk-qwen3.5-roleplay \
+  --local-dir ai/models/mazutalk-qwen3.5-roleplay
+```
+
+비공개 또는 승인이 필요한 모델은 먼저 로그인합니다.
+
+```bash
+hf auth login
+```
+
+STT 모델 저장소가 공개되면 같은 방식으로 Docker가 참조하는 경로에 내려받습니다.
+
+```bash
+hf download <HUGGINGFACE_STT_REPOSITORY> \
+  --local-dir ai/stt/models/faster-whisper-medium-child-lora-int8
+```
+
+#### 모델별 실행 연결
+
+**STT**
+
+다운로드 경로가 기본 경로와 다르면 `.env`의 호스트 경로를 변경합니다.
+
+```env
+STT_MODEL_HOST_PATH=./ai/stt/models/faster-whisper-medium-child-lora-int8
+STT_MODEL=/app/models/stt
+```
+
+**Role-play LLM**
+
+- Hugging Face 저장소에 LoRA adapter만 포함된 경우 base model과 adapter를 함께 로드하거나 먼저 병합해야 합니다.
+- GGUF와 `Modelfile`이 포함된 경우 Ollama에 등록해 로컬 추론에 사용할 수 있습니다.
+
+```bash
+ollama create mazutalk-roleplay \
+  -f ai/models/mazutalk-qwen3.5-roleplay/Modelfile
+
+ollama run mazutalk-roleplay
+```
+
+- 현재 FastAPI 백엔드는 Ollama를 직접 호출하지 않고 `AI_SERVICE_URL/v1/chat/respond` 형식의 별도 AI 서비스 API를 호출합니다. 배포 모델을 실제 서비스에 연결하려면 해당 응답 스키마를 제공하는 adapter server를 실행한 뒤 `.env`에 주소를 지정해야 합니다.
+
+```env
+AI_SERVICE_URL=http://localhost:9000
+```
+
+#### 배포 저장소 작성 원칙
+
+각 Hugging Face 모델 저장소의 Model Card에는 다음 정보를 명시합니다.
+
+- base model과 revision
+- 학습 데이터의 출처, 규모, 생성 방식 및 라이선스
+- SFT/DPO 또는 STT LoRA 학습 설정
+- 모델 파일 형식(adapter, merged Transformers, CTranslate2, GGUF 등)
+- 다운로드 후 실행 명령과 권장 하드웨어
+- 평가 데이터와 CER/WER 또는 안전성 평가 결과
+- 알려진 한계, 의료 목적 사용 금지 및 아동 개인정보 주의사항
+- 모델 라이선스와 base model 라이선스
+
+> 모델 저장소에 있는 파일 형식과 라이선스는 항상 해당 Hugging Face Model Card를 최종 기준으로 확인하세요. 모델 파일을 프로젝트 Git에 다시 커밋하지 마세요.
+> `ai/models/`와 `ai/stt/models/`는 실수로 대용량 산출물이 커밋되지 않도록 `.gitignore`에 등록되어 있습니다.
+
+### 5-2. 빠른 시작 — Docker Compose
 
 #### 사전 요구사항
 
@@ -235,7 +312,7 @@ ai/stt/models/faster-whisper-medium-child-lora-int8/
 
 자세한 환경변수와 문제 해결 방법은 [`docs/docker.md`](docs/docker.md)를 참고하세요.
 
-### 5-2. 주요 API
+### 5-3. 주요 API
 
 | Method | Endpoint | 설명 |
 |---|---|---|
