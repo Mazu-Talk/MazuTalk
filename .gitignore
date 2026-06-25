@@ -27,3 +27,7 @@ ai/data/processed/stt/*.jsonl
 ai/data/processed/stt/wav/
 ai/data/processed/stt/**/wav/
 ai/stt/results/*.csv
+
+# Trained model artifacts (distributed via Hugging Face Hub)
+ai/models/
+ai/stt/models/
